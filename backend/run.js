@@ -15,8 +15,8 @@ const PORT = process.env.PORT || 10000;
 // Listener
 app.listen(PORT, '0.0.0.0', async () => {
   try {
-    // Sync DB tables (with alter: true to add new columns like min_stock)
-    await sequelize.sync({ alter: true });
+    // Sync DB tables - use alter only for new columns, skip constraint re-application
+    await sequelize.sync({ alter: { drop: false } });
     console.log('Database synced successfully.');
 
     // ----- CREATE DEFAULT ROLE -----

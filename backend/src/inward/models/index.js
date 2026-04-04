@@ -1,6 +1,8 @@
 import Inward from "./inward.model.js";
 import InwardItem from "./inwarditeam.model.js";
 import Branch from "../../user/models/branch.model.js";
+// Ensure BOM associations are loaded
+import "../../product/models/bom.model.js";
 
 // InwardItem associations are already defined in inwarditeam.model.js
 // Just add Branch association here

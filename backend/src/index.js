@@ -10,10 +10,13 @@ import inwardRoutes from './inward/routes/index.js';
 import billingRoutes from './billing/routes/index.js';
 import dashboardRoutes from './dashboard/routes/index.js';
 import marketingRoutes from './marketing/routes/index.js';
+import rawMaterialRoutes from './rawmaterial/routes/index.js';
 // import razerpayRoutes from './razerpay/routes/index.js'
 
 // Import model associations to ensure they're loaded
 import './inward/models/index.js';
+import './rawmaterial/models/index.js';
+import './product/models/bom.model.js';
 import './billing/models/associations.js';
 import './user/models/associations.js';
 import './marketing/models/index.js';
@@ -101,6 +104,7 @@ app.use('/api/v1', inwardRoutes);
 app.use('/api/v1', billingRoutes);
 app.use('/api/v1', dashboardRoutes);
 app.use('/api/v1', marketingRoutes);
+app.use('/api/v1', rawMaterialRoutes);
 // app.use('/api/v1', razerpayRoutes);
 
 // ---------- 404 Handler ----------

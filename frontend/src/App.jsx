@@ -39,6 +39,7 @@ const moduleIcons = {
   coupon: <Percent size={20} />,
   user: <User size={20} />,
   marketing: <Megaphone size={20} />,
+  rawmaterial: <Box size={20} />,
 };
 const App = () => {
   const modules = Object.entries(routeModules).map(([path, mod]) => {

@@ -6,6 +6,9 @@ import InwardItem from "../models/inwarditeam.model.js";
 import Product from '../../product/models/product.model.js';
 import Stock from '../../stock/models/stock.models.js';
 import Branch from '../../user/models/branch.model.js';
+import BOM from '../../product/models/bom.model.js';
+import RawMaterialStock from '../../rawmaterial/models/rawmaterialstock.model.js';
+import RawMaterial from '../../rawmaterial/models/rawmaterial.model.js';
 // Import associations to ensure they're loaded
 import '../models/index.js';
 
@@ -109,6 +112,41 @@ const inwardService = {
           },
           { transaction: t }
         );
+      }
+
+      // 4️⃣ Deduct raw material stock based on BOM
+      const bomItems = await BOM.findAll({
+        where: { product_id: item.product_id, is_active: true },
+        transaction: t,
+      });
+
+      for (const bomItem of bomItems) {
+        const requiredQty = parseFloat(bomItem.quantity) * quantity;
+
+        const rmStock = await RawMaterialStock.findOne({
+          where: { raw_material_id: bomItem.raw_material_id, branch_id: data.branch_id },
+          transaction: t,
+        });
+
+        if (rmStock) {
+          const newQty = parseFloat(rmStock.quantity) - requiredQty;
+          if (newQty < 0) {
+            const material = await RawMaterial.findByPk(bomItem.raw_material_id, { transaction: t });
+            throw new Error(
+              `Insufficient raw material stock for "${material?.material_name || bomItem.raw_material_id}". ` +
+              `Required: ${requiredQty} ${bomItem.unit}, Available: ${rmStock.quantity} ${rmStock.unit}.`
+            );
+          }
+          rmStock.quantity = newQty;
+          await rmStock.save({ transaction: t });
+          console.log(`Raw material ${bomItem.raw_material_id}: -${requiredQty} → ${newQty}`);
+        } else {
+          const material = await RawMaterial.findByPk(bomItem.raw_material_id, { transaction: t });
+          throw new Error(
+            `No raw material stock found for "${material?.material_name || bomItem.raw_material_id}" in this branch. ` +
+            `Please inward the raw material first.`
+          );
+        }
       }
     }
 
@@ -402,6 +440,40 @@ const inwardService = {
               { transaction: t }
             );
           }
+
+          // Adjust raw material stock based on BOM net change
+          if (change.netChange !== 0) {
+            const bomItems = await BOM.findAll({
+              where: { product_id: productId, is_active: true },
+              transaction: t,
+            });
+
+            for (const bomItem of bomItems) {
+              const rmQtyChange = parseFloat(bomItem.quantity) * change.netChange;
+              const rmStock = await RawMaterialStock.findOne({
+                where: { raw_material_id: bomItem.raw_material_id, branch_id: inward.branch_id },
+                transaction: t,
+              });
+
+              if (rmStock) {
+                const newQty = parseFloat(rmStock.quantity) - rmQtyChange;
+                if (newQty < 0) {
+                  const material = await RawMaterial.findByPk(bomItem.raw_material_id, { transaction: t });
+                  throw new Error(
+                    `Insufficient raw material stock for "${material?.material_name || bomItem.raw_material_id}". ` +
+                    `Required additional: ${rmQtyChange} ${bomItem.unit}, Available: ${rmStock.quantity} ${rmStock.unit}.`
+                  );
+                }
+                rmStock.quantity = newQty;
+                await rmStock.save({ transaction: t });
+              } else if (rmQtyChange > 0) {
+                const material = await RawMaterial.findByPk(bomItem.raw_material_id, { transaction: t });
+                throw new Error(
+                  `No raw material stock found for "${material?.material_name || bomItem.raw_material_id}" in this branch.`
+                );
+              }
+            }
+          }
         }
 
         // Step C: Delete old items
@@ -496,8 +568,32 @@ const inwardService = {
   // ✅ Delete Inward with Items (soft delete)
   async deleteInwardWithItems(id, user) {
     return await sequelize.transaction(async (t) => {
-      const inward = await Inward.findByPk(id, { transaction: t });
+      const inward = await Inward.findByPk(id, {
+        include: [{ model: InwardItem, as: "items" }],
+        transaction: t,
+      });
       if (!inward) return null;
+
+      // Restore raw material stock for each item based on BOM
+      for (const item of inward.items) {
+        const bomItems = await BOM.findAll({
+          where: { product_id: item.product_id, is_active: true },
+          transaction: t,
+        });
+
+        for (const bomItem of bomItems) {
+          const restoreQty = parseFloat(bomItem.quantity) * item.quantity;
+          const rmStock = await RawMaterialStock.findOne({
+            where: { raw_material_id: bomItem.raw_material_id, branch_id: inward.branch_id },
+            transaction: t,
+          });
+          if (rmStock) {
+            rmStock.quantity = parseFloat(rmStock.quantity) + restoreQty;
+            await rmStock.save({ transaction: t });
+            console.log(`Restored raw material ${bomItem.raw_material_id}: +${restoreQty}`);
+          }
+        }
+      }
 
       // soft delete inward
       await inward.update(
@@ -509,12 +605,6 @@ const inwardService = {
         },
         { transaction: t }
       );
-
-      // soft delete inward items (if InwardItem has is_active field)
-      // await InwardItem.update(
-      //   { is_active: false },
-      //   { where: { inward_id: id }, transaction: t }
-      // );
 
       return { message: "Inward and its items soft deleted successfully" };
     });
