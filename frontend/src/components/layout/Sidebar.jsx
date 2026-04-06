@@ -229,7 +229,7 @@ const Sidebar = ({ collapsed = true, setCollapsed = () => { }, selectedParent, s
           open={openMenu === item.key}
           onOpenChange={(visible) => setOpenMenu(visible ? item.key : null)}
           getPopupContainer={() => containerRef.current || document.body} // render inside sidebar container
-          destroyTooltipOnHide
+          destroyOnHidden
           overlayStyle={{ zIndex: 3000, paddingLeft: 10 }}
         >
           <div

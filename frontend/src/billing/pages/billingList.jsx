@@ -35,6 +35,7 @@ import {
 } from "@ant-design/icons";
 import billingService from "../service/billingService.js";
 import { useBranch } from "../../context/BranchContext";
+import BillDetailsModal from "../../dashboard/pages/BillDetailsModal";
 import debounce from "lodash.debounce";
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
@@ -257,7 +258,7 @@ function BillingList() {
     [billings]
   );
 
-  // Show modal; start polling for realtime updates if possible
+  // Show modal
   const showDetails = async (recOrId) => {
     // accept either object or id
     let id = null;
@@ -273,63 +274,18 @@ function BillingList() {
     // fetch latest right away
     if (id) {
       await fetchBillingById(id);
-
-      // start polling when modal open
-      if (billingService.get) {
-        if (pollingRef.current) clearInterval(pollingRef.current);
-        pollingRef.current = setInterval(() => fetchBillingById(id), POLL_INTERVAL);
-      }
     }
   };
 
   const closeModal = () => {
     setModalVisible(false);
     setSelectedBilling(null);
-    if (pollingRef.current) {
-      clearInterval(pollingRef.current);
-      pollingRef.current = null;
-    }
   };
 
   const manualRefresh = async () => {
     if (!selectedBilling?.id) return;
     await fetchBillingById(selectedBilling.id);
     message.success("Refreshed");
-  };
-
-  const exportInvoicePDF = (billing) => {
-    if (!billing) return;
-    const doc = new jsPDF({ unit: "pt", format: "A4" });
-
-    doc.setFontSize(18);
-    doc.text("Invoice", 40, 40);
-
-    doc.setFontSize(12);
-    doc.text(`Billing No: ${billing.billing_no || "-"}`, 40, 70);
-    doc.text(`Customer: ${billing.customer_name || "-"}`, 40, 88);
-    doc.text(`Date: ${billing.billing_date ? new Date(billing.billing_date).toLocaleString() : "-"}`, 40, 106);
-
-    const head = [["Product", "Code", "Unit", "Qty", "Unit Price", "Total"]];
-    const body = (billing.items || []).map((it) => [
-      it.product?.product_name || "-",
-      it.product?.product_code || "-",
-      it.product?.unit || "-",
-      it.quantity,
-      `₹${it.unit_price}`,
-      `₹${it.total_price}`,
-    ]);
-
-    doc.autoTable({ startY: 130, head, body, styles: { fontSize: 10 } });
-
-    const finalY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 20 : 300;
-
-    doc.text(`Subtotal: ₹${billing.subtotal_amount || "0.00"}`, 40, finalY);
-    doc.text(`Discount: ₹${billing.discount_amount || "0.00"}`, 40, finalY + 16);
-    doc.text(`Tax: ₹${billing.tax_amount || "0.00"}`, 40, finalY + 32);
-    doc.setFontSize(13);
-    doc.text(`Total: ₹${billing.total_amount || "0.00"}`, 40, finalY + 56);
-
-    doc.save(`${billing.billing_no || "invoice"}.pdf`);
   };
 
   const itemColumns = [
@@ -455,7 +411,7 @@ function BillingList() {
             </Button>
 
             <div className="hidden md:block">
-              <Radio.Group value={viewMode} onChange={(e) => setViewMode(e.target.value)} optionType="button" buttonStyle="solid" style={{display:'flex',justifyContent:'center',alignItems:'center'}}>
+              <Radio.Group value={viewMode} onChange={(e) => setViewMode(e.target.value)} optionType="button" buttonStyle="solid" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                 <Radio.Button value="table">Table</Radio.Button>
                 <Radio.Button value="card">Card</Radio.Button>
               </Radio.Group>
@@ -519,7 +475,7 @@ function BillingList() {
                 const typeLabel = getTypeLabel(item.type);
                 return (
                   <List.Item key={item.id}>
-                    <Card bodyStyle={{ padding: 16 }} style={cardStyles.cardWrap}>
+                    <Card styles={{ body: { padding: 16 } }} style={cardStyles.cardWrap}>
                       <div style={cardStyles.headerRow}>
                         <div style={cardStyles.leftMeta}>
                           <div style={cardStyles.avatarSquare("#0ea5a4")}>{initials}</div>
@@ -595,179 +551,12 @@ function BillingList() {
         </div>
       )}
 
-
-      <style>
-        {`
-    /* scope to only this modal so other modals stay untouched */
-    .invoice-modal .ant-modal-content {
-      padding-top: 2px !important;
-    }
-
-    /* optional: reduce the default modal header padding if you want it even tighter */
-    .invoice-modal .ant-card-body {
-      padding-top: 0px !important;
-      padding-bottom: 8px !important;
-    }
-  `}
-      </style>
-
-      {/* Advanced Modal — colorful invoice-like layout, realtime polling, print/pdf/refresh */}
-      <Modal style={{ top: 15, paddingTop: 0 }}
-        className="invoice-modal"
-        open={modalVisible}
-        title={null}
-        onCancel={closeModal}
-        footer={[
-          <Space key="modal-actions">
-            <Button icon={<DownloadOutlined />} onClick={() => exportInvoicePDF(selectedBilling)}>
-              Download PDF
-            </Button>
-            <Button key="close" onClick={closeModal}>
-              Close
-            </Button>
-          </Space>,
-        ]}
-        width={980}
-        bodyStyle={{ maxHeight: "80vh", overflowY: "auto", padding: 0, scrollbarWidth: "none", scrollbarWidth: "none", }}
-      >
-
-
-        {/* Modal body */}
-        <div style={{ padding: 10 }}>
-          <Row gutter={16}>
-            <Col xs={24} md={24}>
-              <Card
-                size="small"
-                bordered={false}
-                style={{ borderRadius: 12, overflow: "hidden" }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between", // space between left info and right tags
-                    gap: 16,
-                    flexWrap: "wrap", // keeps it responsive on small screens
-                  }}
-                >
-                  {/* Left side: Avatar + Customer Info */}
-                  <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
-                    <Avatar
-                      size={40}
-                      style={{
-                        background: "#0ea5a4",
-                        color: "#fff",
-                        fontWeight: 800,
-                      }}
-                    >
-                      {getInitials(selectedBilling?.customer_name)}
-                    </Avatar>
-                    <div style={{ minWidth: 0 }}>
-                      <div
-                        style={{
-                          fontSize: 14,
-                          fontWeight: 800,
-                          color: "#0f172a",
-                          whiteSpace: "nowrap",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                        }}
-                      >
-                        {selectedBilling?.customer_name}
-                      </div>
-                      <div style={{ color: "#6b7280", fontSize: 12 }}>
-                        Order{" "}
-                        <strong style={{ color: "#0f172a" }}>
-                          {selectedBilling?.billing_no || "—"}
-                        </strong>
-                        {" • "}
-                        {selectedBilling?.billing_date
-                          ? new Date(selectedBilling.billing_date).toLocaleString()
-                          : "Date —"}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Right side: Tags */}
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    <Tag
-                      style={{
-                        fontWeight: 800,
-                        borderRadius: 8,
-                        padding: "0 10px",
-                        background: "#eef2ff",
-                        color: "#3730a3",
-                      }}
-                    >
-                      {getTypeLabel(selectedBilling?.type)}
-                    </Tag>
-                    <Tag
-                      style={{
-                        fontWeight: 800,
-                        borderRadius: 8,
-                        padding: "0 10px",
-                        background: "#fff7ed",
-                        color: "#92400e",
-                      }}
-                    >
-                      {(selectedBilling?.payment_method || "cash")
-                        .toString()
-                        .toUpperCase()}
-                    </Tag>
-                    <Tag
-                      style={{
-                        fontWeight: 800,
-                        borderRadius: 8,
-                        padding: "0 10px",
-                        background: statusMeta(selectedBilling?.status).bg,
-                        color: statusMeta(selectedBilling?.status).color,
-                      }}
-                    >
-                      {statusMeta(selectedBilling?.status).label}
-                    </Tag>
-                  </div>
-                </div>
-              </Card>
-            </Col>
-          </Row>
-
-
-          <div style={{ fontWeight: 600, marginBottom: 1 }}>Items</div>
-          <Table columns={itemColumns} dataSource={selectedBilling?.items || []} pagination={false} size="small" rowKey={(r) => r.id} />
-
-          <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 16 }}>
-            <div style={{ width: 360 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", padding: "0px 0" }}>
-                <div style={{ color: "#6b7280" }}>Subtotal</div>
-                <div style={{ fontWeight: 700 }}>₹{selectedBilling?.subtotal_amount ?? "0.00"}</div>
-              </div>
-
-              <div style={{ display: "flex", justifyContent: "space-between", padding: "0px 0" }}>
-                <div style={{ color: "#6b7280" }}>Discount</div>
-                <div style={{ fontWeight: 700 }}>₹{selectedBilling?.discount_amount ?? "0.00"}</div>
-              </div>
-
-              <div style={{ display: "flex", justifyContent: "space-between", padding: "0px 0" }}>
-                <div style={{ color: "#6b7280" }}>Tax</div>
-                <div style={{ fontWeight: 700 }}>₹{selectedBilling?.tax_amount ?? "0.00"}</div>
-              </div>
-
-              <div style={{ display: "flex", justifyContent: "space-between", padding: "1px 0", background: "linear-gradient(90deg,#fef3c7,#fff7ed)", borderRadius: 8 }}>
-                <div style={{ fontSize: 16, fontWeight: 900 }}>Total</div>
-                <div style={{ fontSize: 18, fontWeight: 900, color: "#b45309" }}>₹{selectedBilling?.total_amount ?? "0.00"}</div>
-              </div>
-
-              <div style={{ marginTop: 10, display: "flex", justifyContent: "space-between", color: "#6b7280" }}>
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between", color: "#6b7280" }}>
-              </div>
-            </div>
-          </div>
-
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          </div>
-        </div>
-      </Modal>
+      <BillDetailsModal
+        visible={modalVisible}
+        onClose={closeModal}
+        billId={selectedBilling?.id}
+        initialData={selectedBilling}
+      />
     </div>
   );
 }

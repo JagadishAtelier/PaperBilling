@@ -40,6 +40,22 @@ const Shipment = sequelize.define("Shipment", {
     type: DataTypes.DATE,
     allowNull: true,
   },
+  shipping_address: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+  },
+  vehicle_no: {
+    type: DataTypes.STRING(50),
+    allowNull: true,
+  },
+  driver_name: {
+    type: DataTypes.STRING(100),
+    allowNull: true,
+  },
+  driver_phone: {
+    type: DataTypes.STRING(20),
+    allowNull: true,
+  },
   is_active: {
     type: DataTypes.BOOLEAN,
     defaultValue: true,

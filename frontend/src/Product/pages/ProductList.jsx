@@ -174,9 +174,29 @@ const ProductList = () => {
         </div>
       ),
     },
-    { title: "Brand", dataIndex: "brand", key: "brand", responsive: ["lg"] },
+    {
+      title: "GSM",
+      dataIndex: "gsm",
+      key: "gsm",
+      responsive: ["md"],
+      render: (gsm) => gsm ? `${gsm} GSM` : "—",
+    },
+    {
+      title: "Paper Type",
+      dataIndex: "paper_type",
+      key: "paper_type",
+      responsive: ["lg"],
+      render: (v) => v || "—",
+    },
+    {
+      title: "Size",
+      dataIndex: "size",
+      key: "size",
+      responsive: ["lg"],
+      render: (v) => v || "—",
+    },
     { title: "Category", dataIndex: "category_name", key: "category", responsive: ["lg"] },
-    { title: "Price", dataIndex: "purchase_price", key: "price", sorter: true, responsive: ["xl"], render: (price) => `₹${price}` },
+    { title: "Purchase Price", dataIndex: "purchase_price", key: "price", sorter: true, responsive: ["xl"], render: (price) => `₹${price}` },
     { title: "Selling Price", dataIndex: "selling_price", key: "selling_price", sorter: true, responsive: ["xl"], render: (price) => `₹${price}` },
     {
       title: "Actions",
@@ -184,10 +204,12 @@ const ProductList = () => {
       fixed: "right",
       render: (_, record) => {
         const menuItems = [
-          { key: "brand", label: `Brand: ${record.brand}` },
+          { key: "gsm", label: `GSM: ${record.gsm ? record.gsm + " GSM" : "N/A"}` },
+          { key: "paper_type", label: `Type: ${record.paper_type || "N/A"}` },
+          { key: "size", label: `Size: ${record.size || "N/A"}` },
           { key: "category", label: `Category: ${record.category_name}` },
-          { key: "price", label: `Price: ₹${record.purchase_price}` },
-          { key: "selling_price", label: `Selling Price: ₹${record.selling_price}` },
+          { key: "price", label: `Purchase: ₹${record.purchase_price}` },
+          { key: "selling_price", label: `Selling: ₹${record.selling_price}` },
         ];
 
         return (
@@ -197,9 +219,6 @@ const ProductList = () => {
               <Button type="primary" icon={<EditOutlined />} onClick={() => navigate(`/Product/edit/${record.id}`)}>
                 Edit
               </Button>
-              {/* <Popconfirm title="Are you sure to delete this product?" onConfirm={() => handleDelete(record.id)}>
-              <Button danger icon={<DeleteOutlined />}>Delete</Button>
-            </Popconfirm> */}
             </Space>
           </>
         );

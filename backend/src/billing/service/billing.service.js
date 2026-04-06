@@ -9,6 +9,7 @@ import Customer from "../models/customer.model.js";
 import Branch from "../../user/models/branch.model.js";
 import customerService from "./customer.service.js";
 import couponService from "./coupon.service.js";
+import Shipment from "../models/shipment.model.js";
 import "../models/associations.js";
 
 const billingService = {
@@ -21,7 +22,8 @@ const billingService = {
         customer = await customerService.findOrCreateCustomer({
           customer_phone: data.customer_phone,
           customer_name: data.customer_name,
-          customer_email: data.customer_email
+          customer_email: data.customer_email,
+          address: data.customer_address
         }, data.created_by);
       }
 
@@ -170,6 +172,8 @@ const billingService = {
           status: data.status,
           counter_no: data.counter_no || null,
           notes: data.notes || null,
+          custom_phone: data.custom_phone || null,
+          customer_address: data.customer_address || null,
           created_by: data.created_by,
           created_by_name: data.created_by_name,
           created_by_email: data.created_by_email,
@@ -202,6 +206,15 @@ const billingService = {
           data.customer_phone,
           billing.id
         );
+      }
+
+      // 1️⃣0️⃣.5️⃣ Create Shipment if requested
+      if (data.is_shipping) {
+        await Shipment.create({
+          billing_id: billing.id,
+          shipping_address: data.shipping_address,
+          status: 'Pending',
+        }, { transaction: t });
       }
 
       // 1️⃣1️⃣ Return Billing with Items, Customer, and Coupon info
@@ -357,6 +370,8 @@ const billingService = {
           payment_method: data.payment_method || billing.payment_method,
           status: data.status || billing.status,
           notes: data.notes !== undefined ? data.notes : billing.notes,
+          custom_phone: data.custom_phone !== undefined ? data.custom_phone : billing.custom_phone,
+          customer_address: data.customer_address !== undefined ? data.customer_address : billing.customer_address,
           updated_by: data.updated_by,
           updated_by_name: data.updated_by_name,
           updated_by_email: data.updated_by_email,
