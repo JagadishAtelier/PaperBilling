@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useRef } from "react";
 import { Modal, Button, Table, Row, Col, Card, Avatar, Tag, message, Space, Spin, Typography, Input, DatePicker, Select, Empty, Divider } from "antd";
 const { Text, Title } = Typography;
-import { DownloadOutlined, EditOutlined, SaveOutlined, CloseOutlined, PrinterOutlined } from "@ant-design/icons";
+import { DownloadOutlined, EditOutlined, SaveOutlined, CloseOutlined, PrinterOutlined, FilePdfOutlined } from "@ant-design/icons";
 import billingService from "../../billing/service/billingService";
 import shipmentService from "../../billing/service/shipmentService";
+import userService from "../../user/service/userService";
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 import { Truck, Package, Clock, CheckCircle, XCircle } from "lucide-react";
@@ -63,12 +64,38 @@ const amountToWords = (num) => {
     return convert(n) + ' Only';
 };
 
+// Format vehicle number to Indian registration format: AA 00 A(A) 0000
+// Supports both 1-letter series (TN 37 A 1234) and 2-letter series (MH 12 AB 1234)
+const formatVehicleNo = (value) => {
+    // Strip everything except alphanumeric, convert to uppercase
+    const raw = value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+
+    const part1 = raw.slice(0, 2); // State code: AA
+    const part2 = raw.slice(2, 4); // District no: 00
+    const rest  = raw.slice(4);    // Series + Number
+
+    if (!rest) return [part1, part2].filter(Boolean).join(' ');
+
+    // Detect series: leading 1 or 2 letters, then up to 4 digits
+    let seriesLen = 0;
+    while (seriesLen < 2 && seriesLen < rest.length && /[A-Z]/.test(rest[seriesLen])) {
+        seriesLen++;
+    }
+
+    const part3 = rest.slice(0, seriesLen);             // Series: A or AA
+    const part4 = rest.slice(seriesLen, seriesLen + 4); // Number: 0000
+
+    return [part1, part2, part3, part4].filter(Boolean).join(' ');
+};
+
 const BillDetailsModal = ({ visible, onClose, billId, initialData }) => {
     const [selectedBilling, setSelectedBilling] = useState(null);
+    const [branchDetails, setBranchDetails] = useState(null);
     const [shipment, setShipment] = useState(null);
     const [loading, setLoading] = useState(false);
     const [shipmentLoading, setShipmentLoading] = useState(false);
     const [isEditingShipment, setIsEditingShipment] = useState(false);
+    const [messageApi, contextHolder] = message.useMessage();
     const [shipmentForm, setShipmentForm] = useState({ 
         carrier_name: '', 
         tracking_id: '', 
@@ -132,12 +159,29 @@ const BillDetailsModal = ({ visible, onClose, billId, initialData }) => {
         }
     };
 
+    const fetchBranchDetails = async (branchId) => {
+        if (!branchId) return;
+        try {
+            const res = await userService.getBranchById(branchId);
+            const data = res?.data?.data || res?.data || res;
+            setBranchDetails(data);
+        } catch (e) {
+            console.error("Failed to fetch branch details:", e);
+        }
+    };
+
     const fetchBillingById = async (id, isPolling = false) => {
         if (!isPolling) setLoading(true);
         try {
             const res = await billingService.getById(id);
             const payload = res?.data ? res.data : res;
-            if (payload) setSelectedBilling(payload);
+            if (payload) {
+                setSelectedBilling(payload);
+                // Fetch branch details using the billing's branch_id
+                if (payload.branch_id) {
+                    fetchBranchDetails(payload.branch_id);
+                }
+            }
         } catch (e) {
             if (!isPolling) message.error(`Failed to load details: ${e.message}`);
         } finally {
@@ -154,58 +198,246 @@ const BillDetailsModal = ({ visible, onClose, billId, initialData }) => {
                 estimated_delivery: shipmentForm.estimated_delivery ? shipmentForm.estimated_delivery.toISOString() : null
             };
             await shipmentService.upsert(billId, payload);
-            message.success("Shipment updated successfully");
+            messageApi.success("Shipment updated successfully");
             setIsEditingShipment(false);
             fetchShipment(billId);
         } catch (e) {
-            message.error("Failed to update shipment");
+            messageApi.error("Failed to update shipment");
         } finally {
             setShipmentLoading(false);
         }
     };
 
-    const exportInvoicePDF = () => {
+    const exportGSTInvoicePDF = () => {
         const billing = selectedBilling;
         if (!billing) return;
-        const doc = new jsPDF({ unit: "pt", format: "A4" });
 
-        doc.setFontSize(18);
-        doc.text("Tax Invoice", 40, 40);
+        const branch = branchDetails || {};
+        const sellerName = branch.branch_name || 'Your Company';
+        const sellerAddress = [branch.address, branch.city, branch.state].filter(Boolean).join(', ') || '';
+        const sellerGSTIN = branch.gstin || 'N/A';
+        const sellerPhone = branch.phone || '';
 
-        doc.setFontSize(10);
-        doc.text(`Billing No: ${billing.billing_no || "-"}`, 40, 70);
-        doc.text(`Customer: ${billing.customer_name || "-"}`, 40, 85);
-        doc.text(`Date: ${billing.billing_date ? dayjs(billing.billing_date).format("DD-MM-YYYY HH:mm") : "-"}`, 40, 100);
+        // Compute CGST/SGST per item (assume intra-state: CGST = SGST = tax/2)
+        const items = (billing.items || []).map((it, idx) => {
+            const baseAmt = parseFloat(it.unit_price || 0) * parseInt(it.quantity || 1);
+            const storedTaxAmt = parseFloat(it.tax || it.tax_amount || 0);
 
-        const head = [["#", "Product", "HSN", "Qty", "Price", "Tax", "Total"]];
-        const body = (billing.items || []).map((it, idx) => [
-            idx + 1,
-            it.product?.product_name || it.product_name || "-",
-            it.product?.hsn_code || "-",
-            it.quantity,
-            `₹${it.unit_price}`,
-            `${it.tax_percentage || 0}%`,
-            `₹${it.total_price}`,
-        ]);
+            // Use stored tax_percentage if available; otherwise reverse-calculate from tax amount
+            let taxRate = parseFloat(it.tax_percentage || 0);
+            if (taxRate === 0 && storedTaxAmt > 0 && baseAmt > 0) {
+                taxRate = Math.round((storedTaxAmt / baseAmt) * 100 * 100) / 100; // round to 2dp
+            }
 
-        doc.autoTable({ startY: 120, head, body, styles: { fontSize: 9 } });
+            const cgstRate = taxRate / 2;
+            const sgstRate = taxRate / 2;
+            // Use stored tax amount (split half each) if available, else compute from rate
+            const taxAmtToSplit = storedTaxAmt > 0 ? storedTaxAmt : (baseAmt * taxRate) / 100;
+            const cgstAmt = (taxAmtToSplit / 2).toFixed(2);
+            const sgstAmt = (taxAmtToSplit / 2).toFixed(2);
+            const total = parseFloat(it.total_price || 0).toFixed(2);
+            return {
+                idx: idx + 1,
+                name: it.product?.product_name || it.product_name || '-',
+                hsn: it.product?.hsn_code || '-',
+                qty: it.quantity,
+                unit: it.product?.unit || 'Pcs',
+                rate: parseFloat(it.unit_price || 0).toFixed(2),
+                taxRate,
+                cgstRate,
+                sgstRate,
+                cgstAmt,
+                sgstAmt,
+                total,
+            };
+        });
 
-        const finalY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 20 : 300;
+        const totalCGST = items.reduce((s, i) => s + parseFloat(i.cgstAmt), 0).toFixed(2);
+        const totalSGST = items.reduce((s, i) => s + parseFloat(i.sgstAmt), 0).toFixed(2);
+        const subtotal = parseFloat(billing.subtotal_amount || 0).toFixed(2);
+        const discount = parseFloat(billing.discount_amount || 0).toFixed(2);
+        const grandTotal = parseFloat(billing.total_amount || 0).toFixed(2);
 
-        doc.text(`Subtotal: ₹${billing.subtotal_amount || "0.00"}`, 400, finalY);
-        doc.text(`Tax: ₹${billing.tax_amount || "0.00"}`, 400, finalY + 15);
-        doc.text(`Discount: ₹${billing.discount_amount || "0.00"}`, 400, finalY + 30);
-        doc.setFont(undefined, 'bold');
-        doc.text(`GRAND TOTAL: ₹${billing.total_amount || "0.00"}`, 400, finalY + 50);
-        
-        doc.setFont(undefined, 'italic');
-        doc.text(`In Words: ${amountToWords(billing.total_amount)}`, 40, finalY + 70);
+        const printWindow = window.open('', '_blank', 'width=900,height=700');
+        if (!printWindow) {
+            messageApi.error('Please allow popups to download the invoice.');
+            return;
+        }
 
-        doc.save(`${billing.billing_no || "invoice"}.pdf`);
+        const itemRows = items.map(it => `
+            <tr>
+                <td>${it.idx}</td>
+                <td>${it.name}</td>
+                <td>${it.hsn}</td>
+                <td>${it.unit}</td>
+                <td style="text-align:right">${it.qty}</td>
+                <td style="text-align:right">₹${it.rate}</td>
+                <td style="text-align:right">${it.cgstRate}%</td>
+                <td style="text-align:right">₹${it.cgstAmt}</td>
+                <td style="text-align:right">${it.sgstRate}%</td>
+                <td style="text-align:right">₹${it.sgstAmt}</td>
+                <td style="text-align:right">₹${it.total}</td>
+            </tr>
+        `).join('');
+
+        const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Tax Invoice - ${billing.billing_no}</title>
+  <style>
+    @page { size: A4; margin: 12mm; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; font-size: 11px; color: #111; }
+    .outer-border { border: 2px solid #111; padding: 0; }
+    .header { display: flex; justify-content: space-between; align-items: flex-start; padding: 12px 14px; border-bottom: 1px solid #ccc; }
+    .company-name { font-size: 18px; font-weight: 800; color: #1a3a5c; }
+    .company-sub { font-size: 10px; color: #555; margin-top: 2px; }
+    .invoice-title { text-align: right; }
+    .invoice-title h2 { font-size: 15px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+    .invoice-title .copy-label { font-size: 9px; color: #888; margin-top: 2px; }
+    .info-section { display: flex; border-bottom: 1px solid #ccc; }
+    .info-box { flex: 1; padding: 10px 14px; }
+    .info-box:not(:last-child) { border-right: 1px solid #ccc; }
+    .info-label { font-size: 9px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; font-weight: 700; }
+    .info-value { font-size: 11px; font-weight: 600; line-height: 1.5; }
+    .info-value-sm { font-size: 10px; line-height: 1.5; }
+    table { width: 100%; border-collapse: collapse; font-size: 10px; }
+    thead tr { background: #1a3a5c; color: #fff; }
+    thead th { padding: 6px 5px; text-align: left; font-weight: 600; }
+    thead th.num { text-align: right; }
+    tbody tr:nth-child(even) { background: #f8fafc; }
+    tbody td { padding: 5px; border-bottom: 1px solid #e8ecf0; vertical-align: top; }
+    .summary-section { display: flex; border-top: 1px solid #ccc; }
+    .words-box { flex: 2; padding: 10px 14px; border-right: 1px solid #ccc; }
+    .totals-box { flex: 1; padding: 8px 14px; }
+    .total-row { display: flex; justify-content: space-between; padding: 2px 0; font-size: 11px; }
+    .total-row.grand { border-top: 2px solid #111; margin-top: 4px; padding-top: 4px; font-weight: 800; font-size: 13px; color: #1a3a5c; }
+    .footer-section { display: flex; justify-content: space-between; padding: 10px 14px; border-top: 1px solid #ccc; font-size: 10px; }
+    .sign-box { text-align: right; }
+    .sign-line { border-top: 1px solid #555; margin-top: 30px; padding-top: 4px; font-size: 10px; color: #555; }
+    .gstin-badge { display: inline-block; background: #eef2ff; color: #3730a3; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; margin-top: 4px; }
+    @media print { button { display: none !important; } }
+  </style>
+</head>
+<body>
+<div class="outer-border">
+  <!-- HEADER -->
+  <div class="header">
+    <div>
+      <div class="company-name">${sellerName}</div>
+      ${sellerAddress ? `<div class="company-sub">${sellerAddress}</div>` : ''}
+      ${sellerPhone ? `<div class="company-sub">Ph: ${sellerPhone}</div>` : ''}
+      <div class="gstin-badge">GSTIN: ${sellerGSTIN}</div>
+    </div>
+    <div class="invoice-title">
+      <h2>Tax Invoice</h2>
+      <div class="copy-label">ORIGINAL FOR BUYER</div>
+      <div style="margin-top:8px; font-size:11px;">
+        <strong>Invoice No:</strong> ${billing.billing_no || '-'}<br>
+        <strong>Date:</strong> ${billing.billing_date ? dayjs(billing.billing_date).format('DD-MM-YYYY') : '-'}<br>
+        ${billing.counter_no ? `<strong>Counter:</strong> ${billing.counter_no}` : ''}
+      </div>
+    </div>
+  </div>
+
+  <!-- BILL TO / DETAILS -->
+  <div class="info-section">
+    <div class="info-box" style="flex:2">
+      <div class="info-label">Bill To</div>
+      <div class="info-value">${billing.customer_name || '-'}</div>
+      <div class="info-value-sm">${billing.custom_phone || billing.customer_phone || ''}</div>
+      ${billing.buyer_gstin ? `<div class="gstin-badge" style="margin-top:4px;">GSTIN: ${billing.buyer_gstin}</div>` : ''}
+      ${billing.customer_address ? `<div class="info-value-sm" style="margin-top:3px;">${billing.customer_address}</div>` : ''}
+    </div>
+    <div class="info-box">
+      <div class="info-label">Place of Supply</div>
+      <div class="info-value">${branch.state || '-'}</div>
+    </div>
+    <div class="info-box">
+      <div class="info-label">Payment</div>
+      <div class="info-value">${(billing.payment_method || 'Cash').toUpperCase()}</div>
+      <div class="info-value-sm" style="margin-top:3px;"><span style="background:${billing.status === 'paid' ? '#dcfce7' : '#fff7ed'};color:${billing.status === 'paid' ? '#15803d' : '#d97706'};padding:2px 8px;border-radius:4px;font-weight:700">${billing.status?.toUpperCase() || 'PENDING'}</span></div>
+    </div>
+  </div>
+
+  <!-- ITEMS TABLE -->
+  <table>
+    <thead>
+      <tr>
+        <th style="width:24px">#</th>
+        <th>Description of Goods</th>
+        <th>HSN</th>
+        <th>Unit</th>
+        <th class="num">Qty</th>
+        <th class="num">Rate</th>
+        <th class="num">CGST%</th>
+        <th class="num">CGST Amt</th>
+        <th class="num">SGST%</th>
+        <th class="num">SGST Amt</th>
+        <th class="num">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${itemRows}
+    </tbody>
+  </table>
+
+  <!-- TOTALS + AMOUNT IN WORDS -->
+  <div class="summary-section">
+    <div class="words-box">
+      <div class="info-label">Amount in Words</div>
+      <div style="font-size:11px; font-weight:600; margin-top:4px; font-style:italic;">Rupees ${amountToWords(billing.total_amount)}</div>
+      ${billing.notes ? `<div style="margin-top:8px;"><span class="info-label">Notes:</span><div style="font-size:10px;margin-top:2px;">${billing.notes}</div></div>` : ''}
+    </div>
+    <div class="totals-box">
+      <div class="total-row"><span>Subtotal</span><span>₹${subtotal}</span></div>
+      <div class="total-row"><span>CGST</span><span>₹${totalCGST}</span></div>
+      <div class="total-row"><span>SGST</span><span>₹${totalSGST}</span></div>
+      ${parseFloat(discount) > 0 ? `<div class="total-row"><span>Discount</span><span style="color:#dc2626">- ₹${discount}</span></div>` : ''}
+      <div class="total-row grand"><span>Grand Total</span><span>₹${grandTotal}</span></div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer-section">
+    <div>
+      <div class="info-label">Declaration</div>
+      <div style="font-size:9px; color:#555; max-width:300px; margin-top:2px;">We declare that this invoice shows the actual price of the goods described and that all particulars are true and correct.</div>
+    </div>
+    <div class="sign-box">
+      <div style="font-size:10px; font-weight:700; margin-bottom:4px;">${sellerName}</div>
+      <div class="sign-line">Authorised Signatory</div>
+    </div>
+  </div>
+</div>
+
+<script>window.onload = () => { window.print(); }<\/script>
+</body>
+</html>`;
+
+        printWindow.document.write(html);
+        printWindow.document.close();
     };
 
     const printShipmentSlip = () => {
         if (!shipment || !selectedBilling) return;
+
+        // Validation: Ensure required fields are filled before printing
+        const required = [
+            { field: shipment.estimated_delivery, label: "Est. Delivery" },
+            { field: shipment.status, label: "Status" },
+            { field: shipment.vehicle_no, label: "Vehicle No" },
+            { field: shipment.driver_name, label: "Driver Name" },
+            { field: shipment.driver_phone, label: "Driver Phone" }
+        ];
+
+        const missing = required.filter(item => !item.field).map(item => item.label);
+        if (missing.length > 0) {
+            messageApi.error(`Please fill the following shipment details before printing: ${missing.join(", ")}`);
+            return;
+        }
 
         const printWindow = window.open("", "_blank", "width=700,height=600");
         if (!printWindow) return;
@@ -234,8 +466,15 @@ const BillDetailsModal = ({ visible, onClose, billId, initialData }) => {
     .status-badge.delivered { background: #dcfce7; color: #15803d; }
     .footer { margin-top: 24px; border-top: 1px dashed #ccc; padding-top: 12px; font-size: 11px; color: #888; display: flex; justify-content: space-between; }
     .customer-section { border: 2px solid #111; border-radius: 6px; padding: 12px; margin-bottom: 16px; }
+    .customer-section-inner { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+    .customer-info { flex: 1; }
     .customer-name { font-size: 16px; font-weight: 700; }
     .customer-phone { font-size: 13px; color: #333; margin-top: 3px; }
+    .qr-wrapper { display: flex; flex-direction: column; align-items: center; gap: 4px; flex-shrink: 0; }
+    .qr-container { position: relative; width: 110px; height: 110px; }
+    .qr-container img.qr-img { width: 110px; height: 110px; display: block; }
+    .qr-icon { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 26px; height: 26px; background: white; border-radius: 50%; padding: 2px; box-shadow: 0 0 0 2px white; }
+    .qr-label { font-size: 9px; color: #555; text-align: center; font-weight: 600; letter-spacing: 0.3px; }
     @media print {
       body { padding: 12px; }
       button { display: none; }
@@ -256,9 +495,25 @@ const BillDetailsModal = ({ visible, onClose, billId, initialData }) => {
 
   <div class="customer-section">
     <div class="section-title">Deliver To</div>
-    <div class="customer-name">${selectedBilling.customer_name || "—"}</div>
-    ${selectedBilling.custom_phone || selectedBilling.customer_phone ? `<div class="customer-phone">Ph: ${selectedBilling.custom_phone || selectedBilling.customer_phone}</div>` : ""}
-    ${shipment.shipping_address ? `<div class="address-box" style="margin-top:8px;">${shipment.shipping_address}</div>` : ""}
+    <div class="customer-section-inner">
+      <div class="customer-info">
+        <div class="customer-name">${selectedBilling.customer_name || "—"}</div>
+        ${selectedBilling.custom_phone || selectedBilling.customer_phone ? `<div class="customer-phone">Ph: ${selectedBilling.custom_phone || selectedBilling.customer_phone}</div>` : ""}
+        ${shipment.shipping_address ? `<div class="address-box" style="margin-top:8px;">${shipment.shipping_address}</div>` : ""}
+      </div>
+      ${shipment.shipping_address ? (() => {
+        const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(shipment.shipping_address)}`;
+        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=6&data=${encodeURIComponent(mapsUrl)}`;
+        const mapsPinSvg = `data:image/svg+xml;base64,${btoa('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="white"/><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="#EA4335"/></svg>')}`;
+        return `<div class="qr-wrapper">
+          <div class="qr-container">
+            <img class="qr-img" src="${qrUrl}" alt="Location QR" crossorigin="anonymous" />
+            <img class="qr-icon" src="${mapsPinSvg}" alt="maps" />
+          </div>
+          <div class="qr-label">Scan for Location</div>
+        </div>`;
+      })() : ""}
+    </div>
   </div>
 
   <div class="section">
@@ -318,16 +573,24 @@ const BillDetailsModal = ({ visible, onClose, billId, initialData }) => {
     ];
 
     return (
+        <>
+        {contextHolder}
         <Modal
             style={{ top: 15 }}
             className="invoice-modal"
+            centered
             open={visible}
             title={null}
             onCancel={onClose}
             footer={[
                 <Space key="modal-actions">
-                    <Button icon={<DownloadOutlined />} onClick={exportInvoicePDF} disabled={!selectedBilling}>
-                        Download PDF
+                    <Button
+                        type="primary"
+                        icon={<FilePdfOutlined />}
+                        onClick={exportGSTInvoicePDF}
+                        disabled={!selectedBilling}
+                    >
+                        GST Invoice
                     </Button>
                     <Button key="close" onClick={onClose}>
                         Close
@@ -433,7 +696,16 @@ const BillDetailsModal = ({ visible, onClose, billId, initialData }) => {
                                         <Row gutter={8}>
                                             <Col span={12}>
                                                 <Text size="small">Vehicle No</Text>
-                                                <Input value={shipmentForm.vehicle_no} onChange={e => setShipmentForm({...shipmentForm, vehicle_no: e.target.value})} placeholder="e.g. MH 12 AB 1234" />
+                                                <Input
+                                                    value={shipmentForm.vehicle_no}
+                                                    onChange={e => {
+                                                        const formatted = formatVehicleNo(e.target.value);
+                                                        setShipmentForm({...shipmentForm, vehicle_no: formatted});
+                                                    }}
+                                                    placeholder="e.g. MH 12 AB 1234"
+                                                    maxLength={13}
+                                                    style={{ textTransform: 'uppercase', letterSpacing: '0.5px' }}
+                                                />
                                             </Col>
                                             <Col span={12}>
                                                 <Text size="small">Driver Name</Text>
@@ -541,6 +813,7 @@ const BillDetailsModal = ({ visible, onClose, billId, initialData }) => {
                 <Empty description="Billing details not found" />
             )}
         </Modal>
+        </>
     );
 };
 

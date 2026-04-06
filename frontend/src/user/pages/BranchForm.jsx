@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Form, Input, Button, message, Card, Space, Switch } from "antd";
+import { Form, Input, Button, message, Card, Space, Switch, Row, Col } from "antd";
 import userService from "../service/userService";
 
 const BranchForm = () => {
@@ -26,9 +26,11 @@ const [messageApi, contextHolder] = message.useMessage();
         name: branch.branch_name,
         code: branch.branch_code,
         location: branch.city,
+        state: branch.state,
         contactNumber: branch.phone,
         email: branch.email,
         address: branch.address,
+        gstin: branch.gstin,
         isActive: branch.is_active,
       });
     } catch (error) {
@@ -48,6 +50,8 @@ const [messageApi, contextHolder] = message.useMessage();
         address: values.address,
         phone: values.contactNumber,
         city: values.location,
+        state: values.state,
+        gstin: (values.gstin || '').toUpperCase() || null,
         is_active: values.isActive,
       };
 
@@ -109,6 +113,39 @@ const [messageApi, contextHolder] = message.useMessage();
           <Form.Item label="Address" name="address">
             <Input.TextArea rows={3} placeholder="Full address" />
           </Form.Item>
+
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                label="State"
+                name="state"
+                rules={[{ required: true, message: "Please enter state" }]}
+              >
+                <Input placeholder="e.g., Tamil Nadu" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                label="GSTIN"
+                name="gstin"
+                rules={[
+                  {
+                    pattern: /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/,
+                    message: "Enter a valid 15-digit GSTIN",
+                  },
+                ]}
+              >
+                <Input
+                  placeholder="e.g., 33ABCDE1234F1Z5"
+                  style={{ textTransform: 'uppercase' }}
+                  onChange={(e) => {
+                    const val = e.target.value.toUpperCase();
+                    form.setFieldsValue({ gstin: val });
+                  }}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
 
           <Form.Item label="Active" name="isActive" valuePropName="checked">
             <Switch />
