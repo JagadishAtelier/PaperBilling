@@ -33,6 +33,11 @@ const rawMaterialService = {
     return res.data;
   },
 
+  async bulkUpload(materials) {
+    const res = await api.post("/rawmaterial/bulk-upload", { materials });
+    return res.data;
+  },
+
   // ─── Inwards ─────────────────────────────────────────────────────────────────
 
   async getAllInwards(params = {}) {

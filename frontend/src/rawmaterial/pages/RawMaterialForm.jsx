@@ -45,17 +45,17 @@ const RawMaterialForm = () => {
         <Row gutter={16}>
           <Col xs={24} sm={12}>
             <Form.Item name="material_name" label="Material Name" rules={[{ required: true, message: "Material name is required" }]}>
-              <Input placeholder="e.g. Cotton Fabric" />
+              <Input placeholder="e.g. Newsprint Paper, Bond Paper, Kraft Paper" />
             </Form.Item>
           </Col>
           <Col xs={24} sm={12}>
             <Form.Item name="material_code" label="Material Code" rules={[{ required: true, message: "Material code is required" }]}>
-              <Input placeholder="e.g. RM-001" />
+              <Input placeholder="e.g. RM-001, PAP-001" />
             </Form.Item>
           </Col>
           <Col xs={24} sm={12}>
             <Form.Item name="category" label="Category">
-              <Input placeholder="e.g. Fabric, Thread, Dye" />
+              <Input placeholder="e.g. Paper, Pulp, Chemicals, Dyes, Packaging" />
             </Form.Item>
           </Col>
           <Col xs={24} sm={12}>
@@ -68,6 +68,9 @@ const RawMaterialForm = () => {
                 <Option value="piece">piece</Option>
                 <Option value="roll">roll</Option>
                 <Option value="bundle">bundle</Option>
+                <Option value="ream">ream</Option>
+                <Option value="ton">ton</Option>
+                <Option value="sheet">sheet</Option>
               </Select>
             </Form.Item>
           </Col>
@@ -83,7 +86,7 @@ const RawMaterialForm = () => {
           </Col>
           <Col xs={24} sm={12}>
             <Form.Item name="supplier_name" label="Default Supplier">
-              <Input placeholder="Supplier name" />
+              <Input placeholder="e.g. Star Paper Mills, ITC Paperboards" />
             </Form.Item>
           </Col>
           <Col xs={24} sm={12}>
@@ -96,7 +99,7 @@ const RawMaterialForm = () => {
           </Col>
           <Col xs={24}>
             <Form.Item name="description" label="Description">
-              <TextArea rows={3} placeholder="Optional description" />
+              <TextArea rows={3} placeholder="e.g. 70 GSM uncoated woodfree paper, used for offset printing" />
             </Form.Item>
           </Col>
         </Row>
