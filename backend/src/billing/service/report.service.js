@@ -14,17 +14,21 @@ const reportService = {
     let dateFilter = {};
 
     // Determine date range based on period
-    const now = new Date();
-    
-    if (period === 'today') {
-      const startOfDay = new Date(now.setHours(0, 0, 0, 0));
-      const endOfDay = new Date(now.setHours(23, 59, 59, 999));
-      dateFilter = {
-        billing_date: {
-          [Op.between]: [startOfDay, endOfDay]
-        }
-      };
-    } else if (period === 'this_month') {
+   const now = new Date();
+
+if (period === 'today') {
+  const startOfDay = new Date();
+  startOfDay.setHours(0, 0, 0, 0);
+
+  const endOfDay = new Date();
+  endOfDay.setHours(23, 59, 59, 999);
+
+  dateFilter = {
+    billing_date: {
+      [Op.between]: [startOfDay, endOfDay]
+    }
+  };
+ } else if (period === 'this_month') {
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
       const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
       dateFilter = {
