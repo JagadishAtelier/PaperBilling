@@ -127,8 +127,8 @@ const CustomerBillCopy = () => {
               stack: [
                 { text: "BILL TO:", style: "sectionTitle" },
                 { text: billing.customer_name, style: "customerName" },
-                { text: customer.address || "No address provided", style: "customerInfo" },
-                { text: `Phone: ${billing.customer_phone}`, style: "customerInfo" },
+                { text: billing.customer_address || customer.address || "No address provided", style: "customerInfo" },
+                { text: `Phone: ${billing.custom_phone || billing.customer_phone}`, style: "customerInfo" },
                 customer.gstin ? { text: `GSTIN: ${customer.gstin}`, style: "customerInfo" } : {},
               ],
             },
@@ -318,6 +318,10 @@ const CustomerBillCopy = () => {
       <div style={{ fontSize: 12, lineHeight: 1.2 }}>
         <Text strong>Customer: </Text>
         {billing.customer_name} <br />
+        <Text strong>Address: </Text>
+        {billing.customer_address || "N/A"} <br />
+        <Text strong>Phone: </Text>
+        {billing.custom_phone || billing.customer_phone} <br />
         <Text strong>Date: </Text>
         {dayjs(billing.billing_date).format("DD-MM-YYYY")} <br />
         <Text strong>Status: </Text>

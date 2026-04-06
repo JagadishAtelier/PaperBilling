@@ -1,4 +1,4 @@
-// ProductForm.jsx - Dress Shop Product Form
+// ProductForm.jsx - Paper Manufacture Product Form
 import React, { useEffect, useState } from "react";
 import {
   Steps,
@@ -14,8 +14,9 @@ import {
   Col,
   Divider,
   Grid,
+  Tooltip,
 } from "antd";
-import { LeftOutlined, RightOutlined, CheckCircleTwoTone } from "@ant-design/icons";
+import { LeftOutlined, RightOutlined, CheckCircleTwoTone, InfoCircleOutlined } from "@ant-design/icons";
 import { useNavigate, useParams } from "react-router-dom";
 import productService from "../services/productService";
 import categoryService from "../services/categoryService";
@@ -26,7 +27,7 @@ const { Option } = Select;
 const { Step } = Steps;
 const { useBreakpoint } = Grid;
 
-const STEP_COLORS = ["#FF7A7A", "#FFB86B", "#7BD389", "#6B9BD3"];
+const STEP_COLORS = ["#6B9BD3", "#7BD389", "#FFB86B", "#FF7A7A"];
 
 const isUUID = (v) =>
   typeof v === "string" &&
@@ -42,6 +43,7 @@ const ProductForm = () => {
   const [subcategories, setSubcategories] = useState([]);
   const [form] = Form.useForm();
   const [messageApi, contextHolder] = message.useMessage();
+
   // Fetch categories
   const fetchCategories = async () => {
     try {
@@ -87,17 +89,14 @@ const ProductForm = () => {
         product_name: data.product_name,
         category_id: data.category_id,
         sub_category_id: data.sub_category_id,
-        brand: data.brand,
+        gsm: data.gsm,
+        paper_type: data.paper_type,
+        finish: data.finish,
         size: data.size,
         color: data.color,
-        material: data.material,
-        style: data.style,
-        pattern: data.pattern,
-        sleeve_type: data.sleeve_type,
-        length: data.length,
-        occasion: data.occasion,
-        season: data.season,
-        gender: data.gender,
+        grain_direction: data.grain_direction,
+        opacity: data.opacity,
+        brightness: data.brightness,
         unit: data.unit,
         purchase_price: data.purchase_price,
         selling_price: data.selling_price,
@@ -105,10 +104,11 @@ const ProductForm = () => {
         discount_percentage: data.discount_percentage,
         tax_percentage: data.tax_percentage,
         description: data.description,
-        care_instructions: data.care_instructions,
         barcode: data.barcode,
         sku: data.sku,
+        hsn_code: data.hsn_code,
         image_url: data.image_url,
+        min_stock: data.min_stock,
         status: data.status || "active",
       });
     } catch (err) {
@@ -130,9 +130,9 @@ const ProductForm = () => {
   // Validation groups for steps
   const stepFieldMap = [
     ["category_id", "product_name"],
-    ["size", "color", "material", "style", "pattern", "sleeve_type", "length", "occasion", "season", "gender"],
-    ["purchase_price", "selling_price", "mrp", "discount_percentage", "tax_percentage"],
-    ["description", "care_instructions", "status"],
+    ["gsm", "paper_type"],
+    ["purchase_price", "selling_price"],
+    ["description", "status"],
   ];
 
   const next = async () => {
@@ -161,28 +161,28 @@ const ProductForm = () => {
       product_name: trim(values.product_name ?? ""),
       category_id: values.category_id != null ? String(values.category_id) : "",
       sub_category_id: values.sub_category_id != null ? String(values.sub_category_id) : undefined,
-      brand: trim(values.brand ?? "") || undefined,
+      // Paper manufacture attributes
+      gsm: toNumber(values.gsm),
+      paper_type: trim(values.paper_type ?? "") || undefined,
+      finish: trim(values.finish ?? "") || undefined,
       size: trim(values.size ?? "") || undefined,
       color: trim(values.color ?? "") || undefined,
-      material: trim(values.material ?? "") || undefined,
-      style: trim(values.style ?? "") || undefined,
-      pattern: trim(values.pattern ?? "") || undefined,
-      sleeve_type: trim(values.sleeve_type ?? "") || undefined,
-      length: trim(values.length ?? "") || undefined,
-      occasion: trim(values.occasion ?? "") || undefined,
-      season: trim(values.season ?? "") || undefined,
-      gender: values.gender || undefined,
-      unit: trim(values.unit ?? "piece"),
+      grain_direction: trim(values.grain_direction ?? "") || undefined,
+      opacity: toNumber(values.opacity),
+      brightness: toNumber(values.brightness),
+      // Common fields
+      unit: trim(values.unit ?? "kg"),
       purchase_price: toNumber(values.purchase_price) ?? 0,
       selling_price: toNumber(values.selling_price) ?? 0,
       mrp: toNumber(values.mrp),
       discount_percentage: toNumber(values.discount_percentage) ?? 0,
       tax_percentage: toNumber(values.tax_percentage) ?? 0,
       description: trim(values.description ?? "") || undefined,
-      care_instructions: trim(values.care_instructions ?? "") || undefined,
       barcode: trim(values.barcode ?? "") || undefined,
       sku: trim(values.sku ?? "") || undefined,
+      hsn_code: trim(values.hsn_code ?? "") || undefined,
       image_url: trim(values.image_url ?? "") || undefined,
+      min_stock: toNumber(values.min_stock) ?? 10,
       status: trim(values.status ?? "active"),
     };
 
@@ -208,7 +208,6 @@ const ProductForm = () => {
       await form.validateFields();
       const payload = buildPayloadFromForm();
 
-      // Client-side validation
       const clientFieldErrors = [];
       if (!payload.product_name || payload.product_name.length === 0) {
         clientFieldErrors.push({ name: ["product_name"], errors: ["Product name is required"] });
@@ -286,7 +285,7 @@ const ProductForm = () => {
               name="product_name"
               rules={[{ required: true, message: "Please enter product name" }]}
             >
-              <Input placeholder="Enter product name" size="large" />
+              <Input placeholder="e.g., A4 White Glossy Paper 80 GSM" size="large" />
             </Form.Item>
 
             <Row gutter={16}>
@@ -334,14 +333,33 @@ const ProductForm = () => {
 
             <Row gutter={16}>
               <Col xs={24} sm={12}>
-                <Form.Item label="Brand" name="brand">
-                  <Input placeholder="Enter brand name" />
+                <Form.Item
+                  label={
+                    <span>
+                      Unit&nbsp;
+                      <Tooltip title="e.g., kg, ream, sheet, roll, box, bundle">
+                        <InfoCircleOutlined style={{ color: "#aaa" }} />
+                      </Tooltip>
+                    </span>
+                  }
+                  name="unit"
+                >
+                  <Input placeholder="e.g., kg, ream, sheet, roll" />
                 </Form.Item>
               </Col>
-
               <Col xs={24} sm={12}>
-                <Form.Item label="Unit" name="unit">
-                  <Input placeholder="piece, kg, meter" defaultValue="piece" />
+                <Form.Item
+                  label={
+                    <span>
+                      Min. Stock Alert&nbsp;
+                      <Tooltip title="Get alerted when stock falls below this quantity">
+                        <InfoCircleOutlined style={{ color: "#aaa" }} />
+                      </Tooltip>
+                    </span>
+                  }
+                  name="min_stock"
+                >
+                  <InputNumber style={{ width: "100%" }} placeholder="10" min={0} />
                 </Form.Item>
               </Col>
             </Row>
@@ -349,133 +367,172 @@ const ProductForm = () => {
         );
 
       case 1:
-        // Step 2: Dress Shop Attributes
+        // Step 2: Paper Attributes
         return (
-          <Card title="Dress Attributes" bordered={false}>
+          <Card title="Paper Attributes" bordered={false}>
             <Row gutter={16}>
               <Col xs={24} sm={12} md={8}>
-                <Form.Item label="Size" name="size">
-                  <Select placeholder="Select size" allowClear>
-                    <Option value="XS">XS</Option>
-                    <Option value="S">S</Option>
-                    <Option value="M">M</Option>
-                    <Option value="L">L</Option>
-                    <Option value="XL">XL</Option>
-                    <Option value="XXL">XXL</Option>
-                    <Option value="XXXL">XXXL</Option>
-                    <Option value="Free Size">Free Size</Option>
+                <Form.Item
+                  label={
+                    <span>
+                      GSM&nbsp;
+                      <Tooltip title="Grams per Square Meter — the weight/thickness of the paper">
+                        <InfoCircleOutlined style={{ color: "#aaa" }} />
+                      </Tooltip>
+                    </span>
+                  }
+                  name="gsm"
+                >
+                  <Select placeholder="Select GSM" allowClear showSearch>
+                    {[40, 50, 55, 60, 70, 75, 80, 90, 100, 110, 120, 130, 150, 160, 180, 200, 210, 230, 250, 270, 300, 350, 400].map(g => (
+                      <Option key={g} value={g}>{g} GSM</Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+              </Col>
+
+              <Col xs={24} sm={12} md={8}>
+                <Form.Item label="Paper Type" name="paper_type">
+                  <Select placeholder="Select paper type" allowClear showSearch>
+                    <Option value="Art Paper">Art Paper</Option>
+                    <Option value="Art Board">Art Board</Option>
+                    <Option value="Duplex Board">Duplex Board</Option>
+                    <Option value="Kraft Paper">Kraft Paper</Option>
+                    <Option value="Chromo Paper">Chromo Paper</Option>
+                    <Option value="Maplitho Paper">Maplitho Paper</Option>
+                    <Option value="Newsprint">Newsprint</Option>
+                    <Option value="Poster Paper">Poster Paper</Option>
+                    <Option value="Coated Paper">Coated Paper</Option>
+                    <Option value="Uncoated Paper">Uncoated Paper</Option>
+                    <Option value="Tracing Paper">Tracing Paper</Option>
+                    <Option value="Bond Paper">Bond Paper</Option>
+                    <Option value="Thermal Paper">Thermal Paper</Option>
+                    <Option value="NCR Paper">NCR Paper</Option>
+                    <Option value="Corrugated Board">Corrugated Board</Option>
+                  </Select>
+                </Form.Item>
+              </Col>
+
+              <Col xs={24} sm={12} md={8}>
+                <Form.Item label="Finish" name="finish">
+                  <Select placeholder="Select finish" allowClear>
+                    <Option value="Glossy">Glossy</Option>
+                    <Option value="Matte">Matte</Option>
+                    <Option value="Semi-Gloss">Semi-Gloss</Option>
+                    <Option value="Uncoated">Uncoated</Option>
+                    <Option value="UV Coated">UV Coated</Option>
+                    <Option value="Laminated">Laminated</Option>
+                    <Option value="Satin">Satin</Option>
+                    <Option value="Silk">Silk</Option>
+                  </Select>
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Row gutter={16}>
+              <Col xs={24} sm={12} md={8}>
+                <Form.Item label="Sheet Size" name="size">
+                  <Select placeholder="Select size" allowClear showSearch>
+                    <Option value="A4 (210x297mm)">A4 (210×297 mm)</Option>
+                    <Option value="A3 (297x420mm)">A3 (297×420 mm)</Option>
+                    <Option value="A2 (420x594mm)">A2 (420×594 mm)</Option>
+                    <Option value="A1 (594x841mm)">A1 (594×841 mm)</Option>
+                    <Option value="Legal (216x356mm)">Legal (216×356 mm)</Option>
+                    <Option value="Letter (216x279mm)">Letter (216×279 mm)</Option>
+                    <Option value="20x30 inch">20×30 inch</Option>
+                    <Option value="23x36 inch">23×36 inch</Option>
+                    <Option value="25x36 inch">25×36 inch</Option>
+                    <Option value="30x40 inch">30×40 inch</Option>
+                    <Option value="Roll">Roll (specify in description)</Option>
                   </Select>
                 </Form.Item>
               </Col>
 
               <Col xs={24} sm={12} md={8}>
                 <Form.Item label="Color" name="color">
-                  <Input placeholder="e.g., Red, Blue, Black" />
+                  <Select placeholder="Select color" allowClear>
+                    <Option value="White">White</Option>
+                    <Option value="Natural White">Natural White</Option>
+                    <Option value="Cream">Cream</Option>
+                    <Option value="Ivory">Ivory</Option>
+                    <Option value="Yellow">Yellow</Option>
+                    <Option value="Pink">Pink</Option>
+                    <Option value="Blue">Blue</Option>
+                    <Option value="Green">Green</Option>
+                    <Option value="Red">Red</Option>
+                    <Option value="Orange">Orange</Option>
+                    <Option value="Grey">Grey</Option>
+                    <Option value="Brown (Kraft)">Brown (Kraft)</Option>
+                  </Select>
                 </Form.Item>
               </Col>
 
               <Col xs={24} sm={12} md={8}>
-                <Form.Item label="Gender" name="gender">
-                  <Select placeholder="Select gender" allowClear>
-                    <Option value="Women">Women</Option>
-                    <Option value="Men">Men</Option>
-                    <Option value="Girls">Girls</Option>
-                    <Option value="Boys">Boys</Option>
-                    <Option value="Unisex">Unisex</Option>
+                <Form.Item
+                  label={
+                    <span>
+                      Grain Direction&nbsp;
+                      <Tooltip title="Long grain runs parallel to the long side; short grain runs parallel to the short side">
+                        <InfoCircleOutlined style={{ color: "#aaa" }} />
+                      </Tooltip>
+                    </span>
+                  }
+                  name="grain_direction"
+                >
+                  <Select placeholder="Select grain direction" allowClear>
+                    <Option value="Long Grain">Long Grain (LG)</Option>
+                    <Option value="Short Grain">Short Grain (SG)</Option>
                   </Select>
                 </Form.Item>
               </Col>
             </Row>
 
             <Row gutter={16}>
-              <Col xs={24} sm={12} md={8}>
-                <Form.Item label="Material" name="material">
-                  <Select placeholder="Select material" allowClear>
-                    <Option value="Cotton">Cotton</Option>
-                    <Option value="Silk">Silk</Option>
-                    <Option value="Polyester">Polyester</Option>
-                    <Option value="Chiffon">Chiffon</Option>
-                    <Option value="Georgette">Georgette</Option>
-                    <Option value="Linen">Linen</Option>
-                    <Option value="Denim">Denim</Option>
-                    <Option value="Wool">Wool</Option>
-                  </Select>
+              <Col xs={24} sm={12}>
+                <Form.Item
+                  label={
+                    <span>
+                      Opacity (%)&nbsp;
+                      <Tooltip title="Higher opacity means less show-through from the other side (0–100)">
+                        <InfoCircleOutlined style={{ color: "#aaa" }} />
+                      </Tooltip>
+                    </span>
+                  }
+                  name="opacity"
+                >
+                  <InputNumber
+                    style={{ width: "100%" }}
+                    placeholder="e.g., 90"
+                    min={0}
+                    max={100}
+                    precision={1}
+                    suffix="%"
+                  />
                 </Form.Item>
               </Col>
 
-              <Col xs={24} sm={12} md={8}>
-                <Form.Item label="Style" name="style">
-                  <Select placeholder="Select style" allowClear>
-                    <Option value="Casual">Casual</Option>
-                    <Option value="Formal">Formal</Option>
-                    <Option value="Party Wear">Party Wear</Option>
-                    <Option value="Traditional">Traditional</Option>
-                    <Option value="Western">Western</Option>
-                    <Option value="Ethnic">Ethnic</Option>
-                  </Select>
-                </Form.Item>
-              </Col>
-
-              <Col xs={24} sm={12} md={8}>
-                <Form.Item label="Pattern" name="pattern">
-                  <Select placeholder="Select pattern" allowClear>
-                    <Option value="Solid">Solid</Option>
-                    <Option value="Printed">Printed</Option>
-                    <Option value="Embroidered">Embroidered</Option>
-                    <Option value="Striped">Striped</Option>
-                    <Option value="Checked">Checked</Option>
-                    <Option value="Floral">Floral</Option>
-                  </Select>
-                </Form.Item>
-              </Col>
-            </Row>
-
-            <Row gutter={16}>
-              <Col xs={24} sm={12} md={8}>
-                <Form.Item label="Sleeve Type" name="sleeve_type">
-                  <Select placeholder="Select sleeve type" allowClear>
-                    <Option value="Full Sleeve">Full Sleeve</Option>
-                    <Option value="Half Sleeve">Half Sleeve</Option>
-                    <Option value="Sleeveless">Sleeveless</Option>
-                    <Option value="3/4 Sleeve">3/4 Sleeve</Option>
-                  </Select>
-                </Form.Item>
-              </Col>
-
-              <Col xs={24} sm={12} md={8}>
-                <Form.Item label="Length" name="length">
-                  <Select placeholder="Select length" allowClear>
-                    <Option value="Mini">Mini</Option>
-                    <Option value="Midi">Midi</Option>
-                    <Option value="Maxi">Maxi</Option>
-                    <Option value="Knee Length">Knee Length</Option>
-                    <Option value="Ankle Length">Ankle Length</Option>
-                  </Select>
-                </Form.Item>
-              </Col>
-
-              <Col xs={24} sm={12} md={8}>
-                <Form.Item label="Season" name="season">
-                  <Select placeholder="Select season" allowClear>
-                    <Option value="Summer">Summer</Option>
-                    <Option value="Winter">Winter</Option>
-                    <Option value="Monsoon">Monsoon</Option>
-                    <Option value="All Season">All Season</Option>
-                  </Select>
+              <Col xs={24} sm={12}>
+                <Form.Item
+                  label={
+                    <span>
+                      Brightness&nbsp;
+                      <Tooltip title="Paper brightness measured on a scale of 0–100 (ISO standard)">
+                        <InfoCircleOutlined style={{ color: "#aaa" }} />
+                      </Tooltip>
+                    </span>
+                  }
+                  name="brightness"
+                >
+                  <InputNumber
+                    style={{ width: "100%" }}
+                    placeholder="e.g., 92"
+                    min={0}
+                    max={100}
+                    precision={1}
+                  />
                 </Form.Item>
               </Col>
             </Row>
-
-            <Form.Item label="Occasion" name="occasion">
-              <Select placeholder="Select occasion" allowClear>
-                <Option value="Wedding">Wedding</Option>
-                <Option value="Party">Party</Option>
-                <Option value="Casual">Casual</Option>
-                <Option value="Office Wear">Office Wear</Option>
-                <Option value="Festival">Festival</Option>
-                <Option value="Daily Wear">Daily Wear</Option>
-              </Select>
-            </Form.Item>
           </Card>
         );
 
@@ -544,15 +601,24 @@ const ProductForm = () => {
               </Col>
 
               <Col xs={24} sm={12}>
-                <Form.Item label="Tax %" name="tax_percentage">
-                  <InputNumber
-                    style={{ width: "100%" }}
-                    placeholder="0"
-                    min={0}
-                    max={100}
-                    precision={2}
-                    suffix="%"
-                  />
+                <Form.Item
+                  label={
+                    <span>
+                      GST %&nbsp;
+                      <Tooltip title="Paper GST is usually 12% or 18%">
+                        <InfoCircleOutlined style={{ color: "#aaa" }} />
+                      </Tooltip>
+                    </span>
+                  }
+                  name="tax_percentage"
+                >
+                  <Select placeholder="Select GST rate" allowClear>
+                    <Option value={0}>0% (Exempt)</Option>
+                    <Option value={5}>5%</Option>
+                    <Option value={12}>12%</Option>
+                    <Option value={18}>18%</Option>
+                    <Option value={28}>28%</Option>
+                  </Select>
                 </Form.Item>
               </Col>
             </Row>
@@ -560,13 +626,29 @@ const ProductForm = () => {
             <Divider />
 
             <Row gutter={16}>
-              <Col xs={24} sm={12}>
+              <Col xs={24} sm={8}>
+                <Form.Item
+                  label={
+                    <span>
+                      HSN Code&nbsp;
+                      <Tooltip title="e.g., 4802 for uncoated paper, 4810 for coated paper">
+                        <InfoCircleOutlined style={{ color: "#aaa" }} />
+                      </Tooltip>
+                    </span>
+                  }
+                  name="hsn_code"
+                >
+                  <Input placeholder="e.g., 4802, 4810" />
+                </Form.Item>
+              </Col>
+
+              <Col xs={24} sm={8}>
                 <Form.Item label="Barcode" name="barcode">
                   <Input placeholder="Enter barcode" />
                 </Form.Item>
               </Col>
 
-              <Col xs={24} sm={12}>
+              <Col xs={24} sm={8}>
                 <Form.Item label="SKU" name="sku">
                   <Input placeholder="Enter SKU" />
                 </Form.Item>
@@ -584,11 +666,7 @@ const ProductForm = () => {
         return (
           <Card title="Additional Details" bordered={false}>
             <Form.Item label="Description" name="description">
-              <TextArea rows={4} placeholder="Enter product description" />
-            </Form.Item>
-
-            <Form.Item label="Care Instructions" name="care_instructions">
-              <TextArea rows={3} placeholder="e.g., Hand wash only, Do not bleach" />
+              <TextArea rows={4} placeholder="Enter product description, specifications, or any additional notes" />
             </Form.Item>
 
             <Form.Item label="Status" name="status">
@@ -608,6 +686,7 @@ const ProductForm = () => {
 
   return (
     <div style={{ padding: 12, background: "#f0f2f5", minHeight: "100vh" }}>
+      {contextHolder}
       <Spin spinning={loading}>
         <div style={{ maxWidth: 1200, margin: "0 auto" }}>
           <Card>
@@ -615,7 +694,7 @@ const ProductForm = () => {
               <Col xs={24} md={6}>
                 <Steps direction={screens.md ? "vertical" : "horizontal"} current={current} onChange={(idx) => setCurrent(idx)} className="mb-6 md:mb-0">
                   <Step title={<StepIcon index={0} title="Basic" />} description={screens.md ? "Product info" : ""} />
-                  <Step title={<StepIcon index={1} title="Attributes" />} description={screens.md ? "Dress details" : ""} />
+                  <Step title={<StepIcon index={1} title="Paper Specs" />} description={screens.md ? "GSM, Type, Finish" : ""} />
                   <Step title={<StepIcon index={2} title="Pricing" />} description={screens.md ? "Price & codes" : ""} />
                   <Step title={<StepIcon index={3} title="Details" />} description={screens.md ? "Description" : ""} />
                 </Steps>
@@ -637,9 +716,9 @@ const ProductForm = () => {
                     purchase_price: 0,
                     selling_price: 0,
                     discount_percentage: 0,
-                    tax_percentage: 0,
-                    unit: "piece",
-                    gender: "Women",
+                    tax_percentage: 12,
+                    unit: "kg",
+                    min_stock: 10,
                   }}
                 >
                   {renderStepContent(current)}

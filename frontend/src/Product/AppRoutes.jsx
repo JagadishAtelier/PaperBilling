@@ -6,29 +6,16 @@ import CategoryList from "./pages/CategoryList";
 import CategoryAdd from "./pages/CategoryAdd";
 import SubcategoryList from "./pages/SubcategoryList";
 import SubcategoryForm from "./pages/SubcategoryForm";
-import { List, Tags, Layers, Upload } from "lucide-react";
+import BOMList from "./pages/BOMList";
+import BOMForm from "./pages/BOMForm";
+import { List, Tags, Layers, Upload, ClipboardList } from "lucide-react";
 
 export const ProductMenuItems = [
-  {
-    key: "/Product/list",
-    label: "Products",
-    icon: <List size={18} />,
-  },
-  {
-    key: "/Product/bulk-upload",
-    label: "Bulk Upload",
-    icon: <Upload size={18} />,
-  },
-  {
-    key: "/Product/categories",
-    label: "Categories",
-    icon: <Tags size={18} />,
-  },
-  {
-    key: "/Product/subcategories",
-    label: "Subcategories",
-    icon: <Layers size={18} />,
-  },
+  { key: "/Product/list", label: "Products", icon: <List size={18} /> },
+  { key: "/Product/bulk-upload", label: "Bulk Upload", icon: <Upload size={18} /> },
+  { key: "/Product/categories", label: "Categories", icon: <Tags size={18} /> },
+  { key: "/Product/subcategories", label: "Subcategories", icon: <Layers size={18} /> },
+  { key: "/Product/bom", label: "BOM", icon: <ClipboardList size={18} /> },
 ];
 
 const ProductRoutes = () => {
@@ -46,6 +33,9 @@ const ProductRoutes = () => {
       <Route path="subcategories" element={<SubcategoryList />} />
       <Route path="subcategories/add" element={<SubcategoryForm />} />
       <Route path="subcategories/edit/:id" element={<SubcategoryForm />} />
+
+      <Route path="bom" element={<BOMList />} />
+      <Route path="bom/:productId" element={<BOMForm />} />
     </Routes>
   );
 };

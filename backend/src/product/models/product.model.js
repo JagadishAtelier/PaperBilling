@@ -28,57 +28,56 @@ const Product = sequelize.define("Product", {
         type: DataTypes.STRING(50),
         allowNull: true,
     },
-    // Dress Shop Specific Fields
-    size: {
-        type: DataTypes.STRING(20),
+    // Paper Manufacture Specific Fields
+    gsm: {
+        type: DataTypes.DECIMAL(8, 2),
         allowNull: true,
-        comment: 'e.g., XS, S, M, L, XL, XXL, or numeric sizes'
+        comment: 'Grams per Square Meter - paper weight (e.g., 60, 80, 100, 150, 200, 300)'
+    },
+    paper_type: {
+        type: DataTypes.STRING(100),
+        allowNull: true,
+        comment: 'e.g., Kraft, Art, Duplex, Chromo, Maplitho, Newsprint, Poster'
+    },
+    finish: {
+        type: DataTypes.STRING(100),
+        allowNull: true,
+        comment: 'e.g., Glossy, Matte, Semi-Gloss, Uncoated, UV Coated, Laminated'
+    },
+    size: {
+        type: DataTypes.STRING(50),
+        allowNull: true,
+        comment: 'e.g., A4, A3, 20x30, 23x36, 30x40 inches'
     },
     color: {
         type: DataTypes.STRING(50),
         allowNull: true,
-        comment: 'Dress color'
+        comment: 'Paper color e.g., White, Natural, Cream, Yellow'
     },
-    material: {
-        type: DataTypes.STRING(100),
+    grain_direction: {
+        type: DataTypes.STRING(20),
         allowNull: true,
-        comment: 'e.g., Cotton, Silk, Polyester, Chiffon'
+        comment: 'Long Grain or Short Grain'
     },
-    style: {
-        type: DataTypes.STRING(100),
+    opacity: {
+        type: DataTypes.DECIMAL(5, 2),
         allowNull: true,
-        comment: 'e.g., Casual, Formal, Party Wear, Traditional'
+        comment: 'Opacity percentage (0-100)'
     },
-    pattern: {
-        type: DataTypes.STRING(50),
+    brightness: {
+        type: DataTypes.DECIMAL(5, 2),
         allowNull: true,
-        comment: 'e.g., Solid, Printed, Embroidered, Striped'
+        comment: 'Brightness value (0-100)'
     },
-    sleeve_type: {
-        type: DataTypes.STRING(50),
-        allowNull: true,
-        comment: 'e.g., Full Sleeve, Half Sleeve, Sleeveless'
-    },
-    length: {
-        type: DataTypes.STRING(50),
-        allowNull: true,
-        comment: 'e.g., Mini, Midi, Maxi, Knee Length'
-    },
-    occasion: {
-        type: DataTypes.STRING(100),
-        allowNull: true,
-        comment: 'e.g., Wedding, Party, Casual, Office Wear'
-    },
-    season: {
-        type: DataTypes.STRING(50),
-        allowNull: true,
-        comment: 'e.g., Summer, Winter, All Season'
-    },
-    gender: {
-        type: DataTypes.ENUM('Women', 'Men', 'Girls', 'Boys', 'Unisex'),
-        allowNull: true,
-        defaultValue: 'Women'
-    },
+    // Legacy fields (kept for DB compatibility, not used in UI)
+    material: { type: DataTypes.STRING(100), allowNull: true },
+    style: { type: DataTypes.STRING(100), allowNull: true },
+    pattern: { type: DataTypes.STRING(50), allowNull: true },
+    sleeve_type: { type: DataTypes.STRING(50), allowNull: true },
+    length: { type: DataTypes.STRING(50), allowNull: true },
+    occasion: { type: DataTypes.STRING(100), allowNull: true },
+    season: { type: DataTypes.STRING(50), allowNull: true },
+    gender: { type: DataTypes.STRING(20), allowNull: true },
     unit: {
         type: DataTypes.STRING(20),
         allowNull: true,

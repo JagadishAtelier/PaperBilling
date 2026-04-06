@@ -44,6 +44,8 @@ const Billing = sequelize.define("Billing", {
     allowNull: false,
   },
   notes: { type: DataTypes.TEXT, allowNull: true },
+  custom_phone: { type: DataTypes.STRING(15), allowNull: true },
+  customer_address: { type: DataTypes.TEXT, allowNull: true },
   is_active: { type: DataTypes.BOOLEAN, defaultValue: true },
 }, {
   tableName: "billing",

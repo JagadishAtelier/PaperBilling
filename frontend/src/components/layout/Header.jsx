@@ -34,24 +34,22 @@ const HeaderBar = ({ collapsed, setCollapsed }) => {
   };
 
   // user menu (AntD Menu)
-  const userMenu = (
-    <Menu
-      items={[
-        {
-          key: "profile",
-          icon: <UserOutlined />,
-          label: "Profile",
-        },
-        {
-          key: "logout",
-          icon: <LogoutOutlined />,
-          label: "Logout",
-          danger: true,
-        },
-      ]}
-      onClick={handleMenuClick}
-    />
-  );
+  const userMenuItems = {
+    items: [
+      {
+        key: "profile",
+        icon: <UserOutlined />,
+        label: "Profile",
+      },
+      {
+        key: "logout",
+        icon: <LogoutOutlined />,
+        label: "Logout",
+        danger: true,
+      },
+    ],
+    onClick: handleMenuClick,
+  };
 
   // Dummy recent bills for notifications
   const recentBills = [
@@ -152,7 +150,7 @@ const HeaderBar = ({ collapsed, setCollapsed }) => {
         </Popover> */}
 
         {/* User dropdown */}
-        <Dropdown overlay={userMenu} placement="bottomRight" trigger={["click"]}>
+        <Dropdown menu={userMenuItems} placement="bottomRight" trigger={["click"]}>
           <div
             className="cursor-pointer flex items-center gap-3 p-1 pr-3 rounded-full border border-transparent hover:border-gray-200 transition-all duration-200"
             style={{

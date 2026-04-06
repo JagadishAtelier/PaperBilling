@@ -8,7 +8,7 @@ import { sequelize } from '../../db/index.js';
 const customerService = {
     // Create or get customer by phone
     async findOrCreateCustomer(customerData, created_by) {
-        const { customer_phone, customer_name, customer_email } = customerData;
+        const { customer_phone, customer_name, customer_email, address } = customerData;
 
         // Check if customer exists by phone
         let customer = await Customer.findOne({
@@ -21,8 +21,12 @@ const customerService = {
                 await customer.update({ 
                     customer_name,
                     customer_email: customer_email || customer.customer_email,
+                    address: address || customer.address,
                     updated_by: created_by 
                 });
+            } else if (address && !customer.address) {
+                // If name hasn't changed but address is now provided and was empty
+                await customer.update({ address, updated_by: created_by });
             }
             return customer;
         }
@@ -32,6 +36,7 @@ const customerService = {
             customer_name: customer_name || 'Guest',
             customer_phone,
             customer_email,
+            address,
             created_by
         });
 

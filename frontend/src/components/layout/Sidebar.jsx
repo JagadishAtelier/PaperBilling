@@ -229,7 +229,7 @@ const Sidebar = ({ collapsed = true, setCollapsed = () => { }, selectedParent, s
           open={openMenu === item.key}
           onOpenChange={(visible) => setOpenMenu(visible ? item.key : null)}
           getPopupContainer={() => containerRef.current || document.body} // render inside sidebar container
-          destroyTooltipOnHide
+          destroyOnHidden
           overlayStyle={{ zIndex: 3000, paddingLeft: 10 }}
         >
           <div
@@ -391,7 +391,7 @@ const Sidebar = ({ collapsed = true, setCollapsed = () => { }, selectedParent, s
                   alignItems: "center",
                   justifyContent: collapsed && !isMobile ? "center" : "center",
                   padding: collapsed && !isMobile ? "20px 0" : "20px 24px",
-                  height: 80,
+                  height: 65,
                   borderBottom: theme === "dark" ? "1px solid #374151" : "1px solid #f3f4f6",
                   marginBottom: 8,
                 }}
@@ -414,7 +414,7 @@ const Sidebar = ({ collapsed = true, setCollapsed = () => { }, selectedParent, s
               </div>
 
               {/* Menu items */}
-              <div className="custom-scrollbar" style={{ flexGrow: 1, overflowY: "auto", padding: "16px 12px" }}>
+              <div className="custom-scrollbar" style={{ flexGrow: 1, overflowY: collapsed && !isMobile ? "hidden" : "auto", padding: "0px 12px" }}>
                 {menuItems.map((item) => (
                   <div key={item.key}>
                     {renderParentButton(item)}

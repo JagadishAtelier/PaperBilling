@@ -21,14 +21,17 @@ import {
   Tag,
   Space,
   Modal,
+  Checkbox,
+  Switch,
 } from "antd";
 import { CheckCircleOutlined, GiftOutlined, DeleteOutlined, PlusOutlined, EditOutlined } from "@ant-design/icons";
+import { motion, AnimatePresence } from "framer-motion";
 import dayjs from "dayjs";
 import productService from "../../Product/services/productService";
 import billingService from "../service/billingService";
 import couponService from "../../coupon/service/couponService";
 import customerService from "../../customer/service/customerService";
-import { Gift, Laptop, PhoneCall, Printer, ShieldCheck, Trash2 } from "lucide-react";
+import { Gift, Laptop, PhoneCall, Printer, ShieldCheck, Trash2, Truck } from "lucide-react";
 
 const { Title } = Typography;
 const { Option } = Select;
@@ -41,6 +44,14 @@ function BillingForm() {
   const [fetchingData, setFetchingData] = useState(false);
   const [productCode, setProductCode] = useState("");
   const [preview, setPreview] = useState({ items: [], customer_name: "", billing_date: dayjs() });
+  const [isShipping, setIsShipping] = useState(false);
+  const [shippingAddress, setShippingAddress] = useState("");
+  const [shippingDetails, setShippingDetails] = useState({
+    vehicle_no: "",
+    driver_name: "",
+    driver_phone: "",
+    estimated_delivery: null
+  });
   const [activeTab, setActiveTab] = useState("new");
   const [customerHistoryBills, setCustomerHistoryBills] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -162,7 +173,9 @@ const [messageApi, contextHolder] = message.useMessage();
       const formValues = {
         customer_name: billingData.customer_name || '',
         customer_phone: billingData.customer_phone || '',
-        customer_email: billingData.customer_email || '',
+        customer_email: billingData.customer_email || billingData.customer?.customer_email || '',
+        custom_phone: billingData.custom_phone || '',
+        same_as_billing: billingData.custom_phone === billingData.customer_phone && billingData.customer_phone !== '',
         billing_date: billingData.billing_date ? dayjs(billingData.billing_date) : dayjs(),
         payment_method: billingData.payment_method || 'cash',
         payment_status: billingData.status || 'paid',
@@ -307,7 +320,7 @@ const [messageApi, contextHolder] = message.useMessage();
     return {
       key: key || Date.now().toString(),
       label: `Bill ${key || 1}`,
-      formValues: { bill_no: "", billing_date: dayjs(), status: "pending", items: [], counter_no: "Counter 1" },
+      formValues: { bill_no: "", billing_date: dayjs(), status: "pending", items: [], counter_no: "Counter 1", custom_phone: "", same_as_billing: false },
       customerData: null,
       isNewCustomer: false,
       couponCode: "",
@@ -315,6 +328,14 @@ const [messageApi, contextHolder] = message.useMessage();
       couponApplied: false,
       isSplitPayment: false,
       splitPayments: [{ method: 'cash', amount: 0 }],
+      is_shipping: false,
+      shipping_address: "",
+      shipping_details: {
+        vehicle_no: "",
+        driver_name: "",
+        driver_phone: "",
+        estimated_delivery: null
+      },
       customerHistoryBills: [],
       preview: { items: [], customer_name: "", billing_date: dayjs(), counter_no: "Counter 1" },
     };
@@ -339,6 +360,14 @@ const [messageApi, contextHolder] = message.useMessage();
     setCouponApplied(billState.couponApplied);
     setIsSplitPayment(billState.isSplitPayment);
     setSplitPayments(billState.splitPayments);
+    setIsShipping(billState.is_shipping || false);
+    setShippingAddress(billState.shipping_address || "");
+    setShippingDetails(billState.shipping_details || {
+      vehicle_no: "",
+      driver_name: "",
+      driver_phone: "",
+      estimated_delivery: null
+    });
     setCustomerHistoryBills(billState.customerHistoryBills);
     setPreview(billState.preview);
   };
@@ -354,6 +383,9 @@ const [messageApi, contextHolder] = message.useMessage();
       couponApplied,
       isSplitPayment,
       splitPayments,
+      is_shipping: isShipping,
+      shipping_address: shippingAddress,
+      shipping_details: shippingDetails,
       customerHistoryBills,
       preview,
     };
@@ -797,9 +829,9 @@ const [messageApi, contextHolder] = message.useMessage();
         setCustomerData(customer);
         setIsNewCustomer(false);
 
-        // Auto-fill customer name if found
+        // Auto-fill customer name and address if found
         form.setFieldsValue({
-          customer_name: customer.customer_name
+          customer_name: customer.customer_name,
         });
 
         message.success(`Customer found: ${customer.customer_name}`);
@@ -855,6 +887,15 @@ const [messageApi, contextHolder] = message.useMessage();
 
   // when form changes, keep preview in sync and make sure computed fields exist
   const onValuesChange = (changed, all) => {
+    // If phone number changes and 'same as' is checked, update custom phone
+    if ((changed.customer_phone || changed.same_as_billing === true) && all.same_as_billing) {
+      const phone = changed.customer_phone || all.customer_phone;
+      if (phone) {
+        form.setFieldsValue({ custom_phone: phone });
+        all.custom_phone = phone; // Update 'all' for preview
+      }
+    }
+
     const items = (all.items || []).map((it) => updateItemCalculations({ ...it }));
     form.setFieldsValue({ items });
     setPreview({ ...all, items });
@@ -990,6 +1031,8 @@ const [messageApi, contextHolder] = message.useMessage();
         status: "paid",
         customer_name: values.customer_name || "",
         customer_phone: values.customer_phone || "",
+        customer_address: values.customer_address || "",
+        custom_phone: values.custom_phone || "",
         billing_date: values.billing_date ? dayjs(values.billing_date).toISOString() : new Date().toISOString(),
         counter_no: values.counter_no || null,
         discount_amount,
@@ -1002,6 +1045,12 @@ const [messageApi, contextHolder] = message.useMessage();
         payment_details: isSplitPayment ? splitPayments : null,
         notes: values.remarks || "",
         total_quantity: totalQuantity,
+        is_shipping: isShipping,
+        shipping_address: shippingAddress,
+        vehicle_no: shippingDetails.vehicle_no,
+        driver_name: shippingDetails.driver_name,
+        driver_phone: shippingDetails.driver_phone,
+        estimated_delivery: shippingDetails.estimated_delivery,
         is_active: true,
         billing_items: items, // Changed from 'items' to 'billing_items' to match backend schema
       };
@@ -1478,6 +1527,72 @@ const [messageApi, contextHolder] = message.useMessage();
                           </div>
                         )}
                       </Form.Item>
+                    </Col>
+                  </Row>
+
+                  <Row gutter={16}>
+                    <Col span={24}>
+                      <Card size="small" style={{ marginBottom: 16, border: isShipping ? '1px solid #1890ff' : '1px solid #f0f0f0' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 0 }}>
+                           <Space>
+                              <Truck size={18} color={isShipping ? '#1890ff' : '#666'} />
+                              <span style={{ fontWeight: 600 }}>Shipping Required?</span>
+                           </Space>
+                           <Form.Item name="is_shipping" valuePropName="checked" noStyle>
+                              <Switch 
+                                checked={isShipping} 
+                                onChange={(val) => setIsShipping(val)}
+                              />
+                           </Form.Item>
+                        </div>
+                        <AnimatePresence>
+                          {isShipping && (
+                            <motion.div
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: "auto", opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              transition={{ duration: 0.3, ease: "easeInOut" }}
+                              style={{ overflow: "hidden" }}
+                            >
+                              <div style={{ paddingTop: 12 }}>
+                                <Form.Item 
+                                  label="Shipping Address" 
+                                  name="shipping_address"
+                                  rules={[{ required: true, message: 'Please enter shipping address' }]}
+                                >
+                                  <Input.TextArea 
+                                    placeholder="Enter full address with pincode" 
+                                    rows={2} 
+                                    value={shippingAddress}
+                                    onChange={(e) => setShippingAddress(e.target.value)}
+                                  />
+                                </Form.Item>
+                                <Form.Item
+                                  label={
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                                      <span className="mr-2">Custom Mobile Number</span>
+                                      <Form.Item name="same_as_billing" valuePropName="checked" noStyle>
+                                        <Checkbox onChange={(e) => {
+                                          if (e.target.checked) {
+                                            form.setFieldsValue({ custom_phone: form.getFieldValue("customer_phone") });
+                                          } else {
+                                            form.setFieldsValue({ custom_phone: "" });
+                                          }
+                                        }}> 
+                                          <span style={{ fontSize: '11px', fontWeight: 'normal' }}>Same as Billing Mobile?</span>
+                                        </Checkbox>
+                                      </Form.Item>
+                                    </div>
+                                  }
+                                  name="custom_phone"
+                                >
+                                  <Input placeholder="Enter custom mobile for shipping/bill" maxLength={10} />
+                                </Form.Item>
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </Card>
                     </Col>
                   </Row>
 

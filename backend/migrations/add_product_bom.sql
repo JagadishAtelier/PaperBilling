@@ -1,0 +1,20 @@
+CREATE TABLE IF NOT EXISTS product_bom (
+  id CHAR(36) NOT NULL PRIMARY KEY,
+  product_id CHAR(36) NOT NULL,
+  raw_material_id CHAR(36) NOT NULL,
+  quantity DECIMAL(10,3) NOT NULL DEFAULT 0,
+  unit VARCHAR(20) DEFAULT 'kg',
+  notes TEXT,
+  is_active BOOLEAN DEFAULT TRUE,
+  created_by CHAR(36),
+  updated_by CHAR(36),
+  created_by_name VARCHAR(255),
+  updated_by_name VARCHAR(255),
+  created_by_email VARCHAR(255),
+  updated_by_email VARCHAR(255),
+  createdAt DATETIME NOT NULL,
+  updatedAt DATETIME NOT NULL,
+  UNIQUE KEY bom_product_material_unique (product_id, raw_material_id),
+  FOREIGN KEY (product_id) REFERENCES products(id),
+  FOREIGN KEY (raw_material_id) REFERENCES raw_materials(id)
+);
