@@ -50,6 +50,9 @@ const DashboardFull = () => {
     // Passing it as query parameter 'search'
     navigate(`/product/list?search=${encodeURIComponent(record.product_code)}`);
   };
+  const handleLowStockClick = (record) => {
+  navigate(`/inward/add?product=${record.product_code}&qty=${record.quantity}&min=${record.product?.min_stock || 10}`);
+};
 
   // Fetch dashboard data
   useEffect(() => {
@@ -365,13 +368,17 @@ const DashboardFull = () => {
               >
                 {dashboardData.lowStockProducts.length > 0 ? (
                   <Table
-                    dataSource={dashboardData.lowStockProducts}
-                    columns={lowStockColumns}
-                    rowKey="product_id"
-                    pagination={false}
-                    size="small"
-                    scroll={{ x: true }}
-                  />
+  dataSource={dashboardData.lowStockProducts}
+  columns={lowStockColumns}
+  rowKey="product_id"
+  pagination={false}
+  size="small"
+  scroll={{ x: true }}
+  onRow={(record) => ({
+    onClick: () => handleLowStockClick(record),
+    style: { cursor: "pointer" },
+  })}
+/>
                 ) : (
                   <Empty description="All products have sufficient stock" />
                 )}

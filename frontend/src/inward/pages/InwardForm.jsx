@@ -25,7 +25,7 @@ import inwardService from "../service/inwardService";
 import productService from "../../Product/services/productService";
 import { useBranch } from "../../context/BranchContext";
 import dayjs from "dayjs";
-
+import { useLocation } from "react-router-dom";
 const { TextArea } = Input;
 const { Option } = Select;
 const { Title, Text } = Typography;
@@ -33,6 +33,7 @@ const { Title, Text } = Typography;
 const InwardForm = () => {
   const { id } = useParams(); // future edit support
   const navigate = useNavigate();
+  const location = useLocation();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const { branches, selectedBranch } = useBranch();
@@ -71,7 +72,29 @@ const InwardForm = () => {
   useEffect(() => {
     fetchAllProducts();
   }, []);
-  
+  useEffect(() => {
+  const params = new URLSearchParams(location.search);
+
+  const productCode = params.get("product");
+  const qty = Number(params.get("qty"));   // 🔥 current stock (-2)
+  const min = Number(params.get("min"));   // 🔥 min stock (10)
+
+  if (productCode) {
+    productService.getByCode(productCode).then((res) => {
+      const prod = res.data || res;
+
+      if (prod) {
+        // 🔥 CALCULATE REQUIRED QTY
+        const requiredQty = Math.max(min - qty, 1);
+
+        addProductToItems({
+          ...prod,
+          quantity: requiredQty,   // ✅ pass correct quantity
+        });
+      }
+    });
+  }
+}, [location]);
   // summary now stores items array plus totals and lastAdded index
   const [summary, setSummary] = useState({
     items: [],
@@ -180,11 +203,17 @@ const InwardForm = () => {
     } else {
       // add new row
       const unitPrice = product.purchase_price || 0;
+
+// 🔥 Calculate required quantity
+const minStock = product.min_stock || 10;
+const currentQty = product.quantity || 0;
+const requiredQty = Math.max(minStock - currentQty, 1);
       items.push({
         product_id: product.id,
         product_code: product.product_code,
         product_name: product.product_name,
-        quantity: 1,
+        quantity: product.quantity || requiredQty, 
+        //quantity: 1,
         unit_price: unitPrice,
         total_price: unitPrice,
         unit: product.unit || "piece",
