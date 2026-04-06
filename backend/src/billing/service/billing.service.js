@@ -74,6 +74,7 @@ const billingService = {
           mrp: item.mrp || product.mrp,
           discount_percentage: item.discount_percentage || 0,
           discount: item.discount_amount || item.discount || 0,
+          tax_percentage: parseFloat(item.tax_percentage || 0),
           tax: item.tax_amount || item.tax || 0,
           total_price: item.total_price || (quantity * unitPrice + (item.tax_amount || 0) - (item.discount_amount || 0)),
           barcode: item.barcode
@@ -173,6 +174,7 @@ const billingService = {
           counter_no: data.counter_no || null,
           notes: data.notes || null,
           custom_phone: data.custom_phone || null,
+          buyer_gstin: data.buyer_gstin || null,
           customer_address: data.customer_address || null,
           created_by: data.created_by,
           created_by_name: data.created_by_name,

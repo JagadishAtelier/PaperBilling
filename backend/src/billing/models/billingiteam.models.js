@@ -34,6 +34,12 @@ const BillingItem = sequelize.define("BillingItem", {
     defaultValue: 0.0,
     comment: 'Discount percentage applied'
   },
+  tax_percentage: {
+    type: DataTypes.DECIMAL(5, 2),
+    allowNull: true,
+    defaultValue: 0.0,
+    comment: 'GST/Tax percentage applied (e.g. 5, 12, 18)'
+  },
   total_price: { type: DataTypes.DECIMAL(10, 2), allowNull: false, defaultValue: 0.0 },
   discount: { type: DataTypes.DECIMAL(10, 2), allowNull: true, defaultValue: 0.0 },
   tax: { type: DataTypes.DECIMAL(10, 2), allowNull: true, defaultValue: 0.0 },

@@ -45,6 +45,7 @@ const Billing = sequelize.define("Billing", {
   },
   notes: { type: DataTypes.TEXT, allowNull: true },
   custom_phone: { type: DataTypes.STRING(15), allowNull: true },
+  buyer_gstin: { type: DataTypes.STRING(15), allowNull: true, comment: 'Buyer GSTIN for B2B GST invoices' },
   customer_address: { type: DataTypes.TEXT, allowNull: true },
   is_active: { type: DataTypes.BOOLEAN, defaultValue: true },
 }, {
