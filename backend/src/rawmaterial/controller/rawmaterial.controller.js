@@ -67,6 +67,27 @@ const rawMaterialController = {
     }
   },
 
+  async bulkUpload(req, res) {
+    try {
+      const { materials } = req.body;
+      if (!materials || !Array.isArray(materials) || materials.length === 0) {
+        return res.status(400).json({ error: "Materials array is required" });
+      }
+      const userInfo = req.user ? { id: req.user.id, username: req.user.username, email: req.user.email } : null;
+      const results = await rawMaterialService.bulkUploadRawMaterials(materials, userInfo);
+      const successCount = results.filter(r => r.success).length;
+      const failedCount = results.filter(r => !r.success && !r.skipped).length;
+      const skippedCount = results.filter(r => r.skipped).length;
+      return res.status(201).json({
+        message: `Bulk upload completed: ${successCount} created, ${skippedCount} skipped, ${failedCount} failed`,
+        summary: { total: materials.length, success: successCount, skipped: skippedCount, failed: failedCount },
+        results,
+      });
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
+  },
+
   // ─── Inward ──────────────────────────────────────────────────────────────────
 
   async createInward(req, res) {

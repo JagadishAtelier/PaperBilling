@@ -15,6 +15,7 @@ router.get("/inward/:id", verifyToken, authenticateBranch(), rawMaterialControll
 router.delete("/inward/:id", verifyToken, authenticateBranch(), authenticateBranchRole(['admin']), rawMaterialController.deleteInward);
 
 // Raw Materials CRUD
+router.post("/bulk-upload", verifyToken, rawMaterialController.bulkUpload);
 router.post("/", verifyToken, rawMaterialController.create);
 router.get("/", verifyToken, rawMaterialController.getAll);
 router.get("/:id", verifyToken, rawMaterialController.getById);

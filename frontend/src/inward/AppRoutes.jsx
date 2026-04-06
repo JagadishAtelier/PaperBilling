@@ -10,11 +10,6 @@ export const inwardMenuItems = [
     label: "Inward List",
     icon: <List size={18} />,
   },
-  {
-    key: "/inward/add",
-    label: "Add Inward",
-    icon: <PlusCircle size={18} />,
-  },
 ];
 
 const InwardRoutes = () => {

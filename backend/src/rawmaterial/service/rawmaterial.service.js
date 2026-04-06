@@ -1,6 +1,5 @@
 import { Op } from "sequelize";
-import { sequelize } from "../../db/index.js";
-import RawMaterial from "../models/rawmaterial.model.js";
+import { sequelize } from "../../db/index.js";import RawMaterial from "../models/rawmaterial.model.js";
 import RawMaterialInward from "../models/rawmaterialinward.model.js";
 import RawMaterialInwardItem from "../models/rawmaterialinwarditem.model.js";
 import RawMaterialStock from "../models/rawmaterialstock.model.js";
@@ -50,6 +49,68 @@ const rawMaterialService = {
       deleted_by_name: user?.username || user?.name,
       deleted_by_email: user?.email,
     });
+  },
+
+  async bulkUploadRawMaterials(materialsArray, userInfo) {
+    const results = [];
+
+    // Get last material code once to avoid race conditions
+    const lastMaterial = await RawMaterial.findOne({
+      where: { material_code: { [Op.like]: 'RM%' } },
+      order: [["material_code", "DESC"]],
+    });
+    let lastNumber = 0;
+    if (lastMaterial?.material_code) {
+      const match = lastMaterial.material_code.match(/RM(\d+)/);
+      if (match) lastNumber = parseInt(match[1]);
+    }
+
+    for (const row of materialsArray) {
+      try {
+        if (!row.material_name?.trim()) throw new Error("Material name is required");
+
+        // Skip duplicates by name (case-insensitive)
+        const existing = await RawMaterial.findOne({
+          where: sequelize.where(
+            sequelize.fn('LOWER', sequelize.col('material_name')),
+            row.material_name.trim().toLowerCase()
+          ),
+        });
+        if (existing) {
+          results.push({ success: false, skipped: true, material_name: row.material_name, error: `Already exists: "${existing.material_name}"` });
+          continue;
+        }
+
+        lastNumber++;
+        const material_code = row.material_code?.trim() || `RM${String(lastNumber).padStart(5, '0')}`;
+
+        const material = await RawMaterial.create({
+          material_name: row.material_name.trim(),
+          material_code,
+          category: row.category?.trim() || null,
+          unit: row.unit?.trim() || 'kg',
+          purchase_price: parseFloat(row.purchase_price) || 0,
+          min_stock: parseFloat(row.min_stock) || 0,
+          description: row.description?.trim() || null,
+          supplier_name: row.supplier_name?.trim() || null,
+          status: row.status || 'active',
+          is_active: true,
+          created_by: userInfo?.id,
+          created_by_name: userInfo?.username,
+          created_by_email: userInfo?.email,
+        });
+
+        results.push({ success: true, material });
+      } catch (err) {
+        let errorMessage = err.message;
+        if (err.name === 'SequelizeUniqueConstraintError') {
+          errorMessage = `Duplicate code: ${err.errors.map(e => e.path).join(', ')}`;
+        }
+        results.push({ success: false, material_name: row.material_name, error: errorMessage });
+      }
+    }
+
+    return results;
   },
 
   // ─── Inward CRUD ─────────────────────────────────────────────────────────────
