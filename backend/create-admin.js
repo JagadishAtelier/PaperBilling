@@ -19,8 +19,8 @@ async function createOrUpdateAdmin() {
             process.exit(1);
         }
 
-        const email = "demobilling@demo.com";
-        const password = "billing@2026";
+        const email = "admin@example.com";
+        const password = "password123";
         const hashedPassword = await bcrypt.hash(password, 10);
 
         // Check if user exists
