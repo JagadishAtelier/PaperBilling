@@ -27,6 +27,9 @@ function statusMeta(status = "") {
     if (s === "pending" || s === "in progress") {
         return { color: "#d97706", bg: "#fff7ed", textColor: "#92400e", label: "Pending" };
     }
+    if (s === "partially_paid") {
+        return { color: "#f97316", bg: "#fff7ed", textColor: "#9a3412", label: "Partially Paid" };
+    }
     if (s === "failed") {
         return { color: "#dc2626", bg: "#fee2e2", textColor: "#7f1d1d", label: "Failed" };
     }
@@ -358,7 +361,9 @@ const BillDetailsModal = ({ visible, onClose, billId, initialData }) => {
     <div class="info-box">
       <div class="info-label">Payment</div>
       <div class="info-value">${(billing.payment_method || 'Cash').toUpperCase()}</div>
-      <div class="info-value-sm" style="margin-top:3px;"><span style="background:${billing.status === 'paid' ? '#dcfce7' : '#fff7ed'};color:${billing.status === 'paid' ? '#15803d' : '#d97706'};padding:2px 8px;border-radius:4px;font-weight:700">${billing.status?.toUpperCase() || 'PENDING'}</span></div>
+      <div class="info-value-sm" style="margin-top:3px;">
+        <span style="background:${statusMeta(billing.status).bg};color:${statusMeta(billing.status).color};padding:2px 8px;border-radius:4px;font-weight:700">${statusMeta(billing.status).label}</span>
+      </div>
     </div>
   </div>
 
@@ -397,6 +402,8 @@ const BillDetailsModal = ({ visible, onClose, billId, initialData }) => {
       <div class="total-row"><span>SGST</span><span>₹${totalSGST}</span></div>
       ${parseFloat(discount) > 0 ? `<div class="total-row"><span>Discount</span><span style="color:#dc2626">- ₹${discount}</span></div>` : ''}
       <div class="total-row grand"><span>Grand Total</span><span>₹${grandTotal}</span></div>
+      <div class="total-row" style="margin-top:4px;"><span>Paid Amount</span><span>₹${parseFloat(billing.paid_amount || 0).toFixed(2)}</span></div>
+      <div class="total-row" style="color:#c2410c; font-weight:700;"><span>Balance Due</span><span>₹${parseFloat(billing.due_amount || 0).toFixed(2)}</span></div>
     </div>
   </div>
 
@@ -805,6 +812,41 @@ const BillDetailsModal = ({ visible, onClose, billId, initialData }) => {
                                 <div style={{ marginTop: 8, fontSize: 11, fontStyle: "italic", color: "#9a3412", textAlign: "right" }}>
                                     {amountToWords(selectedBilling.total_amount)}
                                 </div>
+                                {(selectedBilling.due_amount > 0 || selectedBilling.paid_amount > 0) && (
+                                    <>
+                                        <Divider style={{ margin: "10px 0" }} />
+                                        <Row justify="space-between">
+                                            <Text type="secondary">Paid Amount</Text>
+                                            <Text strong style={{ color: "#16a34a" }}>₹{selectedBilling.paid_amount}</Text>
+                                        </Row>
+                                        <Row justify="space-between">
+                                            <Text strong>Balance Due</Text>
+                                            <Text strong style={{ color: "#c2410c", fontSize: 16 }}>₹{selectedBilling.due_amount}</Text>
+                                        </Row>
+                                    </>
+                                )}
+
+                                {selectedBilling.payments && selectedBilling.payments.length > 0 && (
+                                    <>
+                                        <Divider style={{ margin: "10px 0" }} />
+                                        <Text strong style={{ fontSize: 13, color: "#64748b" }}>Payment History</Text>
+                                        <div style={{ marginTop: 8, maxHeight: 150, overflowY: 'auto' }}>
+                                            {selectedBilling.payments.map((pmt, idx) => (
+                                                <Row key={idx} justify="space-between" align="middle" style={{ padding: "4px 0", borderBottom: idx < selectedBilling.payments.length - 1 ? "1px solid #f1f5f9" : "none" }}>
+                                                    <div>
+                                                        <div style={{ fontSize: 12, color: "#475569" }}>
+                                                            {dayjs(pmt.payment_date).format("DD MMM YYYY, HH:mm")}
+                                                        </div>
+                                                        <div style={{ fontSize: 10, color: "#94a3b8", textTransform: "uppercase" }}>
+                                                            {pmt.payment_method}
+                                                        </div>
+                                                    </div>
+                                                    <Text strong style={{ color: "#16a34a" }}>₹{pmt.amount}</Text>
+                                                </Row>
+                                            ))}
+                                        </div>
+                                    </>
+                                )}
                             </div>
                         </Col>
                     </Row>

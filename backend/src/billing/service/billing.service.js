@@ -10,6 +10,7 @@ import Branch from "../../user/models/branch.model.js";
 import customerService from "./customer.service.js";
 import couponService from "./coupon.service.js";
 import Shipment from "../models/shipment.model.js";
+import BillingPayment from "../models/billing_payment.models.js";
 import "../models/associations.js";
 
 const billingService = {
@@ -23,7 +24,8 @@ const billingService = {
           customer_phone: data.customer_phone,
           customer_name: data.customer_name,
           customer_email: data.customer_email,
-          address: data.customer_address
+          address: data.customer_address,
+          customer_gstin: data.buyer_gstin
         }, data.created_by);
       }
 
@@ -151,6 +153,18 @@ const billingService = {
       const paidAmount = data.paid_amount || 0;
       const dueAmount = totalAmount - paidAmount;
 
+      // Determine status based on payments
+      let finalStatus = data.status || 'paid';
+      if (finalStatus !== 'cancelled') {
+        if (dueAmount <= 0) {
+          finalStatus = 'paid';
+        } else if (paidAmount > 0) {
+          finalStatus = 'partially_paid';
+        } else {
+          finalStatus = 'pending';
+        }
+      }
+
       // 7️⃣ Create Billing (without customer_id, using customer_phone)
       const billing = await Billing.create(
         {
@@ -170,7 +184,7 @@ const billingService = {
           due_amount: dueAmount,
           payment_method: data.payment_method,
           payment_details: data.payment_details || null,
-          status: data.status,
+          status: finalStatus,
           counter_no: data.counter_no || null,
           notes: data.notes || null,
           custom_phone: data.custom_phone || null,
@@ -189,6 +203,15 @@ const billingService = {
         billing_id: billing.id,
       }));
       await BillingItem.bulkCreate(itemsWithBillingId, { transaction: t });
+
+      // 8.5️⃣ Create Payment Record
+      if (paidAmount > 0) {
+        await BillingPayment.create({
+          billing_id: billing.id,
+          amount: paidAmount,
+          payment_method: data.payment_method === 'split' ? 'split' : data.payment_method,
+        }, { transaction: t });
+      }
 
       // 9️⃣ Apply coupon if used (mark as used and award points)
       if (appliedCoupon && data.customer_phone) {
@@ -328,26 +351,30 @@ const billingService = {
 
   // ✅ Get Billing by ID
   async getBillingById(id) {
-    return await Billing.findByPk(id, {
-      include: [
-        {
-          model: BillingItem,
-          as: "items",
-          include: [
-            {
-              model: Product,
-              as: "product",
-              attributes: ["id", "product_name", "product_code", "unit", "hsn_code"],
-            },
-          ],
-        },
-        {
-          model: Customer,
-          as: "customer",
-          attributes: ["id", "customer_name", "customer_phone", "customer_email", "address", "city"]
-        }
-      ],
-    });
+      return await Billing.findByPk(id, {
+        include: [
+          {
+            model: BillingItem,
+            as: "items",
+            include: [
+              {
+                model: Product,
+                as: "product",
+                attributes: ["id", "product_name", "product_code", "unit", "hsn_code"],
+              },
+            ],
+          },
+          {
+            model: Customer,
+            as: "customer",
+            attributes: ["id", "customer_name", "customer_phone", "customer_email", "address", "city"]
+          },
+          {
+            model: BillingPayment,
+            as: "payments",
+          }
+        ],
+      });
   },
 
   // ✅ Update Billing with Items
@@ -359,6 +386,8 @@ const billingService = {
       });
 
       if (!billing) return null;
+
+      const oldValues = billing.toJSON();
 
       console.log("=== UPDATE BILLING WITH ITEMS START ===");
       console.log("Billing ID:", id);
@@ -374,6 +403,7 @@ const billingService = {
           notes: data.notes !== undefined ? data.notes : billing.notes,
           custom_phone: data.custom_phone !== undefined ? data.custom_phone : billing.custom_phone,
           customer_address: data.customer_address !== undefined ? data.customer_address : billing.customer_address,
+          buyer_gstin: data.buyer_gstin !== undefined ? data.buyer_gstin : billing.buyer_gstin,
           updated_by: data.updated_by,
           updated_by_name: data.updated_by_name,
           updated_by_email: data.updated_by_email,
@@ -502,6 +532,18 @@ const billingService = {
         const paidAmount = data.paid_amount || totalAmount;
         const dueAmount = totalAmount - paidAmount;
 
+        // Determine status based on payments
+        let finalStatus = data.status || billing.status;
+        if (finalStatus !== 'cancelled') {
+          if (dueAmount <= 0) {
+            finalStatus = 'paid';
+          } else if (paidAmount > 0) {
+            finalStatus = 'partially_paid';
+          } else {
+            finalStatus = 'pending';
+          }
+        }
+
         await billing.update(
           {
             total_quantity: totalQuantity,
@@ -511,9 +553,23 @@ const billingService = {
             total_amount: totalAmount,
             paid_amount: paidAmount,
             due_amount: dueAmount,
+            status: finalStatus,
           },
           { transaction: t }
         );
+
+        // Record any additional payment made
+        const incomingPaidAmount = Number(data.paid_amount || 0);
+        const oldPaidAmount = Number(oldValues.paid_amount || 0);
+        // if user checked full payment, incomingPaidAmount is sent as totalAmount
+        if (incomingPaidAmount > oldPaidAmount) {
+           const newlyPaidDifference = incomingPaidAmount - oldPaidAmount;
+           await BillingPayment.create({
+             billing_id: billing.id,
+             amount: newlyPaidDifference,
+             payment_method: data.payment_method || billing.payment_method,
+           }, { transaction: t });
+        }
       }
 
       console.log("=== UPDATE BILLING WITH ITEMS COMPLETE ===");
@@ -528,7 +584,7 @@ const billingService = {
               {
                 model: Product,
                 as: "product",
-                attributes: ["id", "product_name", "product_code", "hsn_code"],
+                attributes: ["id", "product_name", "product_code", "hsn_code", "unit", "mrp", "selling_price"],
               },
             ],
           },
@@ -536,6 +592,10 @@ const billingService = {
             model: Customer,
             as: "customer",
             attributes: ["id", "customer_name", "customer_phone", "customer_email"]
+          },
+          {
+            model: BillingPayment,
+            as: "payments",
           }
         ],
         transaction: t,

@@ -8,7 +8,7 @@ import { sequelize } from '../../db/index.js';
 const customerService = {
     // Create or get customer by phone
     async findOrCreateCustomer(customerData, created_by) {
-        const { customer_phone, customer_name, customer_email, address } = customerData;
+        const { customer_phone, customer_name, customer_email, address, customer_gstin } = customerData;
 
         // Check if customer exists by phone
         let customer = await Customer.findOne({
@@ -16,17 +16,29 @@ const customerService = {
         });
 
         if (customer) {
-            // Update customer name if provided and different
+            const updateData = { updated_by: created_by };
+            let shouldUpdate = false;
+
+            // Update fields if provided and different/new
             if (customer_name && customer.customer_name !== customer_name) {
-                await customer.update({ 
-                    customer_name,
-                    customer_email: customer_email || customer.customer_email,
-                    address: address || customer.address,
-                    updated_by: created_by 
-                });
-            } else if (address && !customer.address) {
-                // If name hasn't changed but address is now provided and was empty
-                await customer.update({ address, updated_by: created_by });
+                updateData.customer_name = customer_name;
+                shouldUpdate = true;
+            }
+            if (customer_email && customer.customer_email !== customer_email) {
+                updateData.customer_email = customer_email;
+                shouldUpdate = true;
+            }
+            if (address && customer.address !== address) {
+                updateData.address = address;
+                shouldUpdate = true;
+            }
+            if (customer_gstin && customer.customer_gstin !== customer_gstin) {
+                updateData.customer_gstin = customer_gstin;
+                shouldUpdate = true;
+            }
+
+            if (shouldUpdate) {
+                await customer.update(updateData);
             }
             return customer;
         }
@@ -37,6 +49,7 @@ const customerService = {
             customer_phone,
             customer_email,
             address,
+            customer_gstin,
             created_by
         });
 

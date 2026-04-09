@@ -2,12 +2,17 @@ import Billing from './billing.models.js';
 import BillingItem from './billingiteam.models.js';
 import Customer from './customer.model.js';
 import Shipment from './shipment.model.js';
+import BillingPayment from './billing_payment.models.js';
 import Product from '../../product/models/product.model.js';
 import Branch from '../../user/models/branch.model.js';
 
 // Billing has many BillingItems
 Billing.hasMany(BillingItem, { foreignKey: 'billing_id', as: 'items' });
 BillingItem.belongsTo(Billing, { foreignKey: 'billing_id', as: 'billing' });
+
+// Billing has many BillingPayments
+Billing.hasMany(BillingPayment, { foreignKey: 'billing_id', as: 'payments' });
+BillingPayment.belongsTo(Billing, { foreignKey: 'billing_id', as: 'billing' });
 
 // BillingItem belongs to Product
 BillingItem.belongsTo(Product, { foreignKey: 'product_id', as: 'product' });
@@ -38,4 +43,4 @@ Branch.hasMany(Billing, {
 Billing.hasOne(Shipment, { foreignKey: 'billing_id', as: 'shipment' });
 Shipment.belongsTo(Billing, { foreignKey: 'billing_id', as: 'billing' });
 
-export { Billing, BillingItem, Customer, Product, Branch, Shipment };
+export { Billing, BillingItem, BillingPayment, Customer, Product, Branch, Shipment };

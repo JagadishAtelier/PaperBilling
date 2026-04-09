@@ -53,6 +53,10 @@ const Customer = sequelize.define("Customer", {
         type: DataTypes.TEXT,
         allowNull: true,
     },
+    customer_gstin: {
+        type: DataTypes.STRING(15),
+        allowNull: true,
+    },
     is_active: {
         type: DataTypes.BOOLEAN,
         defaultValue: true,

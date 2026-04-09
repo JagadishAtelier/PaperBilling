@@ -241,10 +241,9 @@ const CustomerBillCopy = () => {
                   [{ text: "Tax Total", style: "totalLabel" }, { text: `₹${totalTax.toFixed(2)}`, style: "totalValue" }],
                   billing.discount_amount > 0 ? [{ text: "Discount", style: "totalLabel" }, { text: `- ₹${Number(billing.discount_amount).toFixed(2)}`, style: "totalValue" }] : [],
                   [{ text: "Round Off", style: "totalLabel" }, { text: `₹${(Math.round(grandTotal) - grandTotal).toFixed(2)}`, style: "totalValue" }],
-                  [
-                    { text: "GRAND TOTAL", style: "grandTotalLabel" }, 
-                    { text: `₹${Math.round(grandTotal).toFixed(2)}`, style: "grandTotalValue" }
-                  ],
+                  [{ text: "GRAND TOTAL", style: "grandTotalLabel" }, { text: `₹${Math.round(grandTotal).toFixed(2)}`, style: "grandTotalValue" }],
+                  [{ text: "Paid Amount", style: "totalLabel" }, { text: `₹${Number(billing.paid_amount || 0).toFixed(2)}`, style: "totalValue" }],
+                  [{ text: "Balance Due", style: "grandTotalLabel", color: "#b45309" }, { text: `₹${Number(billing.due_amount || 0).toFixed(2)}`, style: "grandTotalValue", color: "#b45309" }],
                 ].filter(r => r.length > 0)
               },
               layout: 'noBorders'
@@ -325,7 +324,9 @@ const CustomerBillCopy = () => {
         <Text strong>Date: </Text>
         {dayjs(billing.billing_date).format("DD-MM-YYYY")} <br />
         <Text strong>Status: </Text>
-        {billing.status} <br />
+        <span style={{ color: billing.status === 'paid' ? '#16a34a' : billing.status === 'partially_paid' ? '#f97316' : '#d97706', fontWeight: 700 }}>
+          {billing.status === 'partially_paid' ? 'Partially Paid' : (billing.status?.charAt(0).toUpperCase() + billing.status?.slice(1))}
+        </span> <br />
         {billing.remarks && (
           <>
             <Text strong>Remarks: </Text>
@@ -371,7 +372,10 @@ const CustomerBillCopy = () => {
       <div style={{ textAlign: "right", fontSize: 12, lineHeight: 1.2 }}>
         <Text strong>Subtotal: </Text>₹{subtotal.toFixed(2)} <br />
         <Text strong>Total Tax: </Text>₹{totalTax.toFixed(2)} <br />
-        <Text strong>Grand Total: </Text>₹{grandTotal.toFixed(2)}
+        <Text strong>Grand Total: </Text>₹{grandTotal.toFixed(2)} <br />
+        <Text strong>Paid Amount: </Text>₹{Number(billing.paid_amount || 0).toFixed(2)} <br />
+        <Text strong style={{ color: "#b45309" }}>Balance Due: </Text>
+        <Text strong style={{ color: "#b45309" }}>₹{Number(billing.due_amount || 0).toFixed(2)}</Text>
       </div>
 
       <Divider style={{ margin: "4px 0" }} />

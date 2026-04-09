@@ -55,6 +55,7 @@ function BillingForm() {
   const [activeTab, setActiveTab] = useState("new");
   const [customerHistoryBills, setCustomerHistoryBills] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [isFullPayment, setIsFullPayment] = useState(true);
 
   // Product dropdown states
   const [allProducts, setAllProducts] = useState([]);
@@ -187,10 +188,20 @@ const [messageApi, contextHolder] = message.useMessage();
         paid_amount: parseFloat(billingData.paid_amount) || 0,
         due_amount: parseFloat(billingData.due_amount) || 0,
         notes: billingData.notes || '',
+        buyer_gstin: billingData.buyer_gstin || '',
+        customer_address: billingData.customer_address || '',
+        counter_no: billingData.counter_no || null,
       };
       
       console.log('Form values to set:', formValues);
       form.setFieldsValue(formValues);
+
+      // Set Full Payment toggle based on amounts
+      if (formValues.paid_amount < formValues.total_amount) {
+        setIsFullPayment(false);
+      } else {
+        setIsFullPayment(true);
+      }
 
       // Set preview
       setPreview({
@@ -263,7 +274,7 @@ const [messageApi, contextHolder] = message.useMessage();
       key: "status",
       render: (v) => (
         <Tag color={v === "paid" ? "green" : "orange"}>
-          {v?.toUpperCase()}
+          {v === 'partially_paid' ? 'Partially Paid' : (v?.charAt(0).toUpperCase() + v?.slice(1))}
         </Tag>
       ),
     },
@@ -338,6 +349,7 @@ const [messageApi, contextHolder] = message.useMessage();
       },
       customerHistoryBills: [],
       preview: { items: [], customer_name: "", billing_date: dayjs(), counter_no: "Counter 1" },
+      isFullPayment: true,
     };
   };
 
@@ -370,6 +382,7 @@ const [messageApi, contextHolder] = message.useMessage();
     });
     setCustomerHistoryBills(billState.customerHistoryBills);
     setPreview(billState.preview);
+    setIsFullPayment(billState.isFullPayment !== undefined ? billState.isFullPayment : true);
   };
 
   const saveCurrentBillState = () => {
@@ -388,6 +401,7 @@ const [messageApi, contextHolder] = message.useMessage();
       shipping_details: shippingDetails,
       customerHistoryBills,
       preview,
+      isFullPayment,
     };
   };
 
@@ -832,6 +846,7 @@ const [messageApi, contextHolder] = message.useMessage();
         // Auto-fill customer name and address if found
         form.setFieldsValue({
           customer_name: customer.customer_name,
+          buyer_gstin: customer.customer_gstin || null,
         });
 
         message.success(`Customer found: ${customer.customer_name}`);
@@ -1041,7 +1056,7 @@ const [messageApi, contextHolder] = message.useMessage();
         coupon_discount, // Add coupon discount
         coupon_code: coupon_code_used, // Add coupon code
         total_amount: totalAmount,
-        paid_amount: Number(values.paid_amount || totalAmount),
+        paid_amount: isFullPayment ? totalAmount : Number(values.paid_amount !== undefined ? values.paid_amount : totalAmount),
         payment_method: isSplitPayment ? "split" : (values.payment_method || "cash"),
         payment_details: isSplitPayment ? splitPayments : null,
         notes: values.remarks || "",
@@ -2040,6 +2055,43 @@ const [messageApi, contextHolder] = message.useMessage();
                       <div style={{ display: "flex", justifyContent: "space-between", borderTop: "1px solid #e5e7eb", paddingTop: 10, marginTop: 8 }}>
                         <div style={{ fontWeight: 800, fontSize: 16 }}>Total Amount</div>
                         <div style={{ fontWeight: 800, fontSize: 16 }}>₹{summary.grandTotal.toFixed(2)}</div>
+                      </div>
+
+                      <div style={{ marginTop: 12 }}>
+                         <div style={{ marginBottom: 8 }}>
+                            <Checkbox 
+                              checked={isFullPayment} 
+                              onChange={(e) => {
+                                setIsFullPayment(e.target.checked);
+                                if (e.target.checked) {
+                                  form.setFieldsValue({ paid_amount: summary.grandTotal });
+                                }
+                              }}
+                            >
+                              <span style={{ fontWeight: 600 }}>Full Payment Received</span>
+                            </Checkbox>
+                         </div>
+
+                         {!isFullPayment && (
+                           <>
+                             <Form.Item label="Received Amount (Advance)" name="paid_amount" style={{ marginBottom: 8 }}>
+                                <InputNumber 
+                                  style={{ width: '100%' }} 
+                                  min={0} 
+                                  placeholder="Amount Received"
+                                  prefix="₹"
+                                  onChange={() => {
+                                    // Force re-render to update Due Amount in preview
+                                    setPreview({...preview, ...form.getFieldsValue()});
+                                  }}
+                                />
+                             </Form.Item>
+                             <div style={{ display: "flex", justifyContent: "space-between", color: (summary.grandTotal - (form.getFieldValue('paid_amount') || 0)) > 0 ? "#ff4d4f" : "#52c41a", fontWeight: 700 }}>
+                                <div>Balance Due (Credit)</div>
+                                <div>₹{(summary.grandTotal - (form.getFieldValue('paid_amount') || 0)).toFixed(2)}</div>
+                             </div>
+                           </>
+                         )}
                       </div>
 
                       {couponApplied && (

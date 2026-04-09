@@ -34,6 +34,7 @@ const [messageApi, contextHolder] = message.useMessage();
         date_of_birth: customerData.date_of_birth,
         anniversary_date: customerData.anniversary_date,
         notes: customerData.notes,
+        gstin: customerData.customer_gstin,
       });
     } catch (error) {
       message.error("Failed to fetch customer");
@@ -58,6 +59,7 @@ const [messageApi, contextHolder] = message.useMessage();
         date_of_birth: values.date_of_birth || null,
         anniversary_date: values.anniversary_date || null,
         notes: values.notes || null,
+        customer_gstin: values.gstin || null,
       };
       
       if (id) {
@@ -115,6 +117,19 @@ const [messageApi, contextHolder] = message.useMessage();
 
           <Form.Item label="Address" name="address">
             <Input.TextArea rows={3} placeholder="Customer address" />
+          </Form.Item>
+
+          <Form.Item
+            label="GSTIN"
+            name="gstin"
+            rules={[
+              {
+                pattern: /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/,
+                message: "Enter a valid 15-digit GSTIN",
+              },
+            ]}
+          >
+            <Input placeholder="e.g., 29ABCDE1234F1Z5" style={{ textTransform: 'uppercase' }} />
           </Form.Item>
 
           <Form.Item>

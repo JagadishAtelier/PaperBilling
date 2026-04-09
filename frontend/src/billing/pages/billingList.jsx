@@ -59,6 +59,9 @@ function statusMeta(status = "") {
   if (s === "pending" || s === "in progress") {
     return { color: "#d97706", bg: "#fff7ed", textColor: "#92400e", label: "Pending" }; // amber
   }
+  if (s === "partially_paid") {
+    return { color: "#f97316", bg: "#fff7ed", textColor: "#9a3412", label: "Partially Paid" }; // orange
+  }
   if (s === "failed") {
     return { color: "#dc2626", bg: "#fee2e2", textColor: "#7f1d1d", label: "Failed" }; // red
   }
@@ -316,6 +319,17 @@ function BillingList() {
       sorter: true,
     },
     {
+      title: "Balance",
+      dataIndex: "due_amount",
+      key: "due_amount",
+      render: (due) => (
+        <span style={{ color: due > 0 ? "#c2410c" : "#16a34a", fontWeight: 700 }}>
+          {due > 0 ? `₹${due}` : "—"}
+        </span>
+      ),
+      sorter: true,
+    },
+    {
       title: "Status",
       dataIndex: "status",
       key: "status",
@@ -368,6 +382,7 @@ function BillingList() {
             items={[
               { key: "all", label: "All" },
               { key: "paid", label: "Paid" },
+              { key: "partially_paid", label: "Partially Paid" },
               { key: "pending", label: "Pending" },
               { key: "failed", label: "Failed" },
               { key: "overdue", label: "Overdue" },
@@ -487,7 +502,7 @@ function BillingList() {
                         </div>
 
                         <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: 8 }}>
-                          <div style={{ background: sMeta.bg, color: sMeta.color, padding: "6px 10px", borderRadius: 16, fontWeight: 700, fontSize: 12 }}>
+                          <div style={{ background: sMeta.bg, color: sMeta.color, padding: "6px 10px", borderRadius: 16, fontWeight: 700, fontSize: 11 }}>
                             {sMeta.label}
                           </div>
 
@@ -515,6 +530,13 @@ function BillingList() {
                           <div style={{ color: "#6b7280", fontSize: 13 }}>Total</div>
                           <div style={cardStyles.totalText}>₹{item.total_amount}</div>
                         </div>
+                        
+                        {item.due_amount > 0 && (
+                          <div style={{ textAlign: "center" }}>
+                            <div style={{ color: "#c2410c", fontSize: 12, fontWeight: 600 }}>Due</div>
+                            <div style={{ color: "#c2410c", fontWeight: 700 }}>₹{item.due_amount}</div>
+                          </div>
+                        )}
 
                         <div style={{ display: "flex", gap: 8 }}>
                           <Tooltip title="Quick view (opens live modal)">
