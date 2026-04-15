@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Form, Input, Button, message, Card, Space } from "antd";
+import { Form, Input, Button, message, Card, Space, Row, Col } from "antd";
+import { UserAddOutlined, EditOutlined } from "@ant-design/icons";
 import customerService from "../service/customerService";
 
 const CustomerForm = () => {
@@ -81,7 +82,18 @@ const [messageApi, contextHolder] = message.useMessage();
     <>
     {contextHolder}
     <div className="p-6">
-      <Card title={id ? "Edit Customer" : "Add Customer"}>
+      {/* ── Page Heading ── */}
+      <div style={{ marginBottom: 20 }}>
+        <h2 style={{ fontSize: 22, fontWeight: 700, margin: 0, display: "flex", alignItems: "center", gap: 8 }}>
+          {id ? <EditOutlined style={{ color: "#7c3aed" }} /> : <UserAddOutlined style={{ color: "#16a34a" }} />}
+          {id ? "Edit Customer" : "Add New Customer"}
+        </h2>
+        <span style={{ color: "#6b7280", fontSize: 13 }}>
+          {id ? "Update customer details below" : "Fill in customer details to create a new record"}
+        </span>
+      </div>
+
+      <Card>
         <Form
           form={form}
           layout="vertical"
@@ -110,9 +122,15 @@ const [messageApi, contextHolder] = message.useMessage();
           <Form.Item
             label="Email"
             name="email"
-            rules={[{ type: "email", message: "Invalid email" }]}
+            rules={[
+              { type: "email", message: "Please enter a valid email address" },
+              {
+                pattern: /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/,
+                message: "Invalid email format (e.g., name@domain.com)",
+              },
+            ]}
           >
-            <Input placeholder="customer@example.com" />
+            <Input placeholder="customer@example.com" type="email" />
           </Form.Item>
 
           <Form.Item label="Address" name="address">

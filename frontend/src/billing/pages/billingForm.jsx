@@ -61,16 +61,16 @@ function BillingForm() {
   const [allProducts, setAllProducts] = useState([]);
   const [productsLoading, setProductsLoading] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
-  
+
   // Quick add product modal states
   const [quickAddModalVisible, setQuickAddModalVisible] = useState(false);
   const [quickAddForm] = Form.useForm();
   const [quickAddLoading, setQuickAddLoading] = useState(false);
-  
+
   // Inline new product states
   const [creatingInlineProducts, setCreatingInlineProducts] = useState(new Set());
-  
-const [messageApi, contextHolder] = message.useMessage();
+
+  const [messageApi, contextHolder] = message.useMessage();
   // Fetch all products for dropdown
   const fetchAllProducts = async (searchTerm = "") => {
     setProductsLoading(true);
@@ -116,16 +116,16 @@ const [messageApi, contextHolder] = message.useMessage();
       console.log('Response keys:', Object.keys(response));
       console.log('Response.data:', response.data);
       console.log('Response.data type:', typeof response.data);
-      
+
       // Try different possible response structures
       let billingData = null;
-      
+
       if (response.data) {
         billingData = response.data;
       } else if (response) {
         billingData = response;
       }
-      
+
       console.log('Extracted billing data:', billingData);
       console.log('Billing data type:', typeof billingData);
 
@@ -140,14 +140,14 @@ const [messageApi, contextHolder] = message.useMessage();
         const unitPrice = parseFloat(item.unit_price) || 0;
         const tax = parseFloat(item.tax) || 0;
         const discount = parseFloat(item.discount) || 0;
-        
+
         // Calculate tax_percentage from tax amount if not provided
         // tax_percentage = (tax / (quantity * unitPrice)) * 100
         let taxPercentage = parseFloat(item.tax_percentage) || 0;
         if (!taxPercentage && tax > 0 && quantity > 0 && unitPrice > 0) {
           taxPercentage = (tax / (quantity * unitPrice)) * 100;
         }
-        
+
         return {
           key: item.id || Math.random().toString(),
           product_id: item.product_id,
@@ -192,7 +192,7 @@ const [messageApi, contextHolder] = message.useMessage();
         customer_address: billingData.customer_address || '',
         counter_no: billingData.counter_no || null,
       };
-      
+
       console.log('Form values to set:', formValues);
       form.setFieldsValue(formValues);
 
@@ -282,9 +282,9 @@ const [messageApi, contextHolder] = message.useMessage();
       title: "Action",
       key: "action",
       render: (_, record) => (
-        <Button 
-          type="primary" 
-          icon={<EditOutlined />} 
+        <Button
+          type="primary"
+          icon={<EditOutlined />}
           size="small"
           onClick={() => {
             // Open in new tab
@@ -573,7 +573,7 @@ const [messageApi, contextHolder] = message.useMessage();
       console.log('Creating quick product:', productData);
       const response = await productService.create(productData);
       console.log('Product created response:', response);
-      
+
       const newProduct = response.data?.data || response.data;
       console.log('New product data:', newProduct);
 
@@ -944,7 +944,7 @@ const [messageApi, contextHolder] = message.useMessage();
       const newProductRows = itemsRaw.filter(item => item._isNew);
       if (newProductRows.length > 0) {
         messageApi.loading('Creating new products...', 0);
-        
+
         for (let i = 0; i < itemsRaw.length; i++) {
           const item = itemsRaw[i];
           if (item._isNew) {
@@ -990,7 +990,7 @@ const [messageApi, contextHolder] = message.useMessage();
 
         messageApi.destroy();
         messageApi.success(`${newProductRows.length} new product(s) created!`);
-        
+
         // Update form with new product IDs
         form.setFieldsValue({ items: itemsRaw });
       }
@@ -1096,7 +1096,7 @@ const [messageApi, contextHolder] = message.useMessage();
         response = await billingService.create(payload);
         messageApi.success("Billing created successfully" + (couponApplied ? " with coupon applied!" : ""));
       }
-      
+
       const result = response.data || response;
 
       // Check if a referral coupon was generated (only for new billings)
@@ -1104,19 +1104,19 @@ const [messageApi, contextHolder] = message.useMessage();
         setGeneratedCoupon(result.coupon_generated);
         setShowCouponModal(true);
       } else {
-  setTimeout(() => {
-    closeCurrentTab();
-  }, 1500);
+        setTimeout(() => {
+          closeCurrentTab();
+        }, 1500);
       }
     } catch (err) {
       console.error("create billing error:", err);
       console.error("error response:", err.response?.data);
-      
+
       let errorMessage = "Failed to create billing";
-      
+
       if (err.response?.data) {
         const errorData = err.response.data;
-        
+
         // Handle different error formats
         if (typeof errorData === 'string') {
           errorMessage = errorData;
@@ -1133,7 +1133,7 @@ const [messageApi, contextHolder] = message.useMessage();
       } else if (err.message) {
         errorMessage = err.message;
       }
-      
+
       messageApi.error(errorMessage);
     } finally {
       setLoading(false);
@@ -1178,15 +1178,15 @@ const [messageApi, contextHolder] = message.useMessage();
 
   // table columns (editable)
   const columns = [
-    { 
-      title: "Product Code", 
-      dataIndex: "product_code", 
+    {
+      title: "Product Code",
+      dataIndex: "product_code",
       key: "code",
       render: (text, record) => record._isNew ? <Tag color="blue">NEW</Tag> : text
     },
-    { 
-      title: "Product Name", 
-      dataIndex: "product_name", 
+    {
+      title: "Product Name",
+      dataIndex: "product_name",
       key: "name",
       render: (text, record, idx) => record._isNew ? (
         <Input
@@ -1204,10 +1204,10 @@ const [messageApi, contextHolder] = message.useMessage();
         <InputNumber min={1} value={record.quantity} onChange={(v) => handleItemChange(idx, "quantity", v || 0)} />
       ),
     },
-    { 
-      title: "Unit Price", 
-      dataIndex: "unit_price", 
-      key: "price", 
+    {
+      title: "Unit Price",
+      dataIndex: "unit_price",
+      key: "price",
       render: (v, record, idx) => record._isNew ? (
         <InputNumber
           placeholder="Price"
@@ -1303,126 +1303,126 @@ const [messageApi, contextHolder] = message.useMessage();
   };
   return (
     <>
-    {contextHolder}
-    <div style={styles.page}>
-      <div style={styles.container}>
-        {/* Bill Tabs */}
-        <Tabs
-          type="editable-card"
-          activeKey={activeBillKey}
-          onChange={handleTabChange}
-          onEdit={handleEditTabs}
-          items={bills.map(b => ({ label: b.label, key: b.key, closable: bills.length > 1 }))}
-          style={{ marginBottom: 0 }}
-        />
-        <Spin spinning={loading}>
-          <Form
-            form={form}
-            className="form"
-            layout="vertical"
-            onFinish={handleSubmit}
-            initialValues={{ status: "pending", items: [] }}
-            onValuesChange={onValuesChange}
-          >
-            <Row gutter={24}>
-              <Col xs={24} lg={16}>
-                <div style={styles.leftCard}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                    <div style={styles.sectionTitle}>Billing Details</div>
-                  </div>
+      {contextHolder}
+      <div style={styles.page}>
+        <div style={styles.container}>
+          {/* Bill Tabs */}
+          <Tabs
+            type="editable-card"
+            activeKey={activeBillKey}
+            onChange={handleTabChange}
+            onEdit={handleEditTabs}
+            items={bills.map(b => ({ label: b.label, key: b.key, closable: bills.length > 1 }))}
+            style={{ marginBottom: 0 }}
+          />
+          <Spin spinning={loading}>
+            <Form
+              form={form}
+              className="form"
+              layout="vertical"
+              onFinish={handleSubmit}
+              initialValues={{ status: "pending", items: [] }}
+              onValuesChange={onValuesChange}
+            >
+              <Row gutter={24}>
+                <Col xs={24} lg={16}>
+                  <div style={styles.leftCard}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                      <div style={styles.sectionTitle}>Billing Details</div>
+                    </div>
 
-                  <Row gutter={16}>
-                    <Col span={12}>
-                      <Form.Item label="Bill no" name="bill_no">
-                        <Input disabled placeholder="Auto Generates" />
-                      </Form.Item>
-                    </Col>
-                    <Col span={12}>
-                      <Form.Item label="Billing Date" name="billing_date" rules={[{ required: true, message: "Select billing date" }]}>
-                        <DatePicker style={{ width: "100%" }} disabled />
-                      </Form.Item>
-                    </Col>
-                  </Row>
+                    <Row gutter={16}>
+                      <Col span={12}>
+                        <Form.Item label="Bill no" name="bill_no">
+                          <Input disabled placeholder="Auto Generates" />
+                        </Form.Item>
+                      </Col>
+                      <Col span={12}>
+                        <Form.Item label="Billing Date" name="billing_date" rules={[{ required: true, message: "Select billing date" }]}>
+                          <DatePicker style={{ width: "100%" }} disabled />
+                        </Form.Item>
+                      </Col>
+                    </Row>
 
-                  <Row gutter={16}>
-                    <Col span={12}>
-                      <Form.Item
-                        label="Customer Phone"
-                        name="customer_phone"
-                        rules={[
-                          { required: true, message: "Enter phone number" },
-                          { pattern: /^[0-9]{10}$/, message: "Enter valid 10-digit number" }
-                        ]}
-                      >
-                        <Input
-                          placeholder="Enter 10-digit phone number"
-                          maxLength={10}
-                          onChange={(e) => {
-                            const phone = e.target.value;
-                            if (phone.length === 10) {
-                              handleCustomerLookup(phone);
-                            } else {
-                              setCustomerData(null);
-                              setIsNewCustomer(false);
+                    <Row gutter={16}>
+                      <Col span={12}>
+                        <Form.Item
+                          label="Customer Phone"
+                          name="customer_phone"
+                          rules={[
+                            { required: true, message: "Enter phone number" },
+                            { pattern: /^[0-9]{10}$/, message: "Enter valid 10-digit number" }
+                          ]}
+                        >
+                          <Input
+                            placeholder="Enter 10-digit phone number"
+                            maxLength={10}
+                            onChange={(e) => {
+                              const phone = e.target.value;
+                              if (phone.length === 10) {
+                                handleCustomerLookup(phone);
+                              } else {
+                                setCustomerData(null);
+                                setIsNewCustomer(false);
+                              }
+                            }}
+                            suffix={
+                              customerLoading ? (
+                                <Spin size="small" />
+                              ) : customerData ? (
+                                <CheckCircleOutlined style={{ color: '#52c41a' }} />
+                              ) : isNewCustomer ? (
+                                <Tag color="blue">New</Tag>
+                              ) : null
                             }
-                          }}
-                          suffix={
-                            customerLoading ? (
-                              <Spin size="small" />
-                            ) : customerData ? (
-                              <CheckCircleOutlined style={{ color: '#52c41a' }} />
-                            ) : isNewCustomer ? (
-                              <Tag color="blue">New</Tag>
-                            ) : null
-                          }
-                        />
-                      </Form.Item>
-                    </Col>
-                    <Col span={12}>
-                      <Form.Item
-                        label="Customer Name"
-                        name="customer_name"
-                        rules={[{ required: true, message: "Enter customer name" }]}
-                      >
-                        <Input
-                          placeholder={isNewCustomer ? "Enter new customer name" : "Enter customer name"}
-                          disabled={customerLoading}
-                        />
-                      </Form.Item>
-                    </Col>
-                  </Row>
+                          />
+                        </Form.Item>
+                      </Col>
+                      <Col span={12}>
+                        <Form.Item
+                          label="Customer Name"
+                          name="customer_name"
+                          rules={[{ required: true, message: "Enter customer name" }]}
+                        >
+                          <Input
+                            placeholder={isNewCustomer ? "Enter new customer name" : "Enter customer name"}
+                            disabled={customerLoading}
+                          />
+                        </Form.Item>
+                      </Col>
+                    </Row>
 
-                  <Row gutter={16}>
-                    <Col span={12}>
-                      <Form.Item
-                        label="Buyer GSTIN (Optional)"
-                        name="buyer_gstin"
-                        rules={[
-                          {
-                            pattern: /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/,
-                            message: "Enter a valid 15-digit GSTIN",
-                          },
-                        ]}
-                      >
-                        <Input
-                          placeholder="e.g., 29ABCDE1234F1Z5"
-                          style={{ textTransform: 'uppercase' }}
-                          onChange={(e) => {
-                            const val = e.target.value.toUpperCase();
-                            form.setFieldsValue({ buyer_gstin: val });
-                          }}
-                        />
-                      </Form.Item>
-                    </Col>
-                    <Col span={12}>
-                      <Form.Item label="Customer Address" name="customer_address">
-                        <Input placeholder="Customer delivery address" />
-                      </Form.Item>
-                    </Col>
-                  </Row>
+                    <Row gutter={16}>
+                      <Col span={12}>
+                        <Form.Item
+                          label="Buyer GSTIN (Optional)"
+                          name="buyer_gstin"
+                          rules={[
+                            {
+                              pattern: /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/,
+                              message: "Enter a valid 15-digit GSTIN",
+                            },
+                          ]}
+                        >
+                          <Input
+                            placeholder="e.g., 29ABCDE1234F1Z5"
+                            style={{ textTransform: 'uppercase' }}
+                            onChange={(e) => {
+                              const val = e.target.value.toUpperCase();
+                              form.setFieldsValue({ buyer_gstin: val });
+                            }}
+                          />
+                        </Form.Item>
+                      </Col>
+                      <Col span={12}>
+                        <Form.Item label="Customer Address" name="customer_address">
+                          <Input placeholder="Customer delivery address" />
+                        </Form.Item>
+                      </Col>
+                    </Row>
 
-                  {/* Customer Info Card */}
-                  {/* {customerData && (
+                    {/* Customer Info Card */}
+                    {/* {customerData && (
                   <Card
                     size="small"
                     style={{ marginBottom: 16, background: '#e6f7ff', border: '1px solid #91d5ff' }}
@@ -1526,197 +1526,197 @@ const [messageApi, contextHolder] = message.useMessage();
                   </Card>
                 )} */}
 
-                  {isNewCustomer && (
-                    <Alert
-                      message="New Customer"
-                      description="This is a new customer. Please enter their name above."
-                      type="info"
-                      showIcon
-                      style={{ marginBottom: 16 }}
-                    />
-                  )}
+                    {isNewCustomer && (
+                      <Alert
+                        message="New Customer"
+                        description="This is a new customer. Please enter their name above."
+                        type="info"
+                        showIcon
+                        style={{ marginBottom: 16 }}
+                      />
+                    )}
 
-                  <Row gutter={16}>
-                    <Col span={12}>
-                      <Form.Item label="Counter No" name="counter_no" placeholder="Select Counter">
-                        <Select>
-                          <Option value="Counter 1">Counter 1</Option>
-                          <Option value="Counter 2">Counter 2</Option>
-                          <Option value="Counter 3">Counter 3</Option>
-                          <Option value="Counter 4">Counter 4</Option>
-                          <Option value="Counter 5">Counter 5</Option>
-                        </Select>
-                      </Form.Item>
-                    </Col>
-                    <Col span={12}>
-                      <Form.Item label="Payment Method" name="payment_method">
-                        {!isSplitPayment ? (
-                          <Select onChange={(value) => {
-                            if (value === 'split') {
-                              setIsSplitPayment(true);
-                            }
-                          }}>
-                            <Option value="cash">Cash</Option>
-                            <Option value="credit_card">Credit Card</Option>
-                            <Option value="debit_card">Debit Card</Option>
-                            <Option value="UPI Current Account">UPI Current Account</Option>
-                            <Option value="UPI Normal Account">UPI</Option>
-                            <Option value="net_banking">Net Banking(Bank Transfer)</Option>
-                            <Option value="split">Split Payment</Option>
-                            <Option value="hold">Hold</Option>
+                    <Row gutter={16}>
+                      <Col span={12}>
+                        <Form.Item label="Counter No" name="counter_no" placeholder="Select Counter">
+                          <Select>
+                            <Option value="Counter 1">Counter 1</Option>
+                            <Option value="Counter 2">Counter 2</Option>
+                            <Option value="Counter 3">Counter 3</Option>
+                            <Option value="Counter 4">Counter 4</Option>
+                            <Option value="Counter 5">Counter 5</Option>
                           </Select>
-                        ) : (
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <span style={{ fontWeight: 600 }}>Split Payment Active</span>
-                            <Button size="small" type="link" onClick={() => setIsSplitPayment(false)}>Cancel</Button>
-                          </div>
-                        )}
-                      </Form.Item>
-                    </Col>
-                  </Row>
-
-                  <Row gutter={16}>
-                    <Col span={24}>
-                      <Card size="small" style={{ marginBottom: 16, border: isShipping ? '1px solid #1890ff' : '1px solid #f0f0f0' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 0 }}>
-                           <Space>
-                              <Truck size={18} color={isShipping ? '#1890ff' : '#666'} />
-                              <span style={{ fontWeight: 600 }}>Shipping Required?</span>
-                           </Space>
-                           <Form.Item name="is_shipping" valuePropName="checked" noStyle>
-                              <Switch 
-                                checked={isShipping} 
-                                onChange={(val) => setIsShipping(val)}
-                              />
-                           </Form.Item>
-                        </div>
-                        <AnimatePresence>
-                          {isShipping && (
-                            <motion.div
-                              initial={{ height: 0, opacity: 0 }}
-                              animate={{ height: "auto", opacity: 1 }}
-                              exit={{ height: 0, opacity: 0 }}
-                              transition={{ duration: 0.3, ease: "easeInOut" }}
-                              style={{ overflow: "hidden" }}
-                            >
-                              <div style={{ paddingTop: 12 }}>
-                                <Form.Item 
-                                  label="Shipping Address" 
-                                  name="shipping_address"
-                                  rules={[{ required: true, message: 'Please enter shipping address' }]}
-                                >
-                                  <Input.TextArea 
-                                    placeholder="Enter full address with pincode" 
-                                    rows={2} 
-                                    value={shippingAddress}
-                                    onChange={(e) => setShippingAddress(e.target.value)}
-                                  />
-                                </Form.Item>
-                                <Form.Item
-                                  label={
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
-                                      <span className="mr-2">Custom Mobile Number</span>
-                                      <Form.Item name="same_as_billing" valuePropName="checked" noStyle>
-                                        <Checkbox onChange={(e) => {
-                                          if (e.target.checked) {
-                                            form.setFieldsValue({ custom_phone: form.getFieldValue("customer_phone") });
-                                          } else {
-                                            form.setFieldsValue({ custom_phone: "" });
-                                          }
-                                        }}> 
-                                          <span style={{ fontSize: '11px', fontWeight: 'normal' }}>Same as Billing Mobile?</span>
-                                        </Checkbox>
-                                      </Form.Item>
-                                    </div>
-                                  }
-                                  name="custom_phone"
-                                >
-                                  <Input placeholder="Enter custom mobile for shipping/bill" maxLength={10} />
-                                </Form.Item>
-                              </div>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </Card>
-                    </Col>
-                  </Row>
-
-                  {/* Split Payment Section */}
-                  {isSplitPayment && (
-                    <Card
-                      size="small"
-                      title="Split Payment Details"
-                      style={{ marginBottom: 16, background: '#fff7e6', border: '1px solid #ffd591' }}
-                      extra={
-                        <Button
-                          type="dashed"
-                          size="small"
-                          onClick={addSplitPayment}
-                        >
-                          + Add Payment
-                        </Button>
-                      }
-                    >
-                      {splitPayments.map((payment, index) => (
-                        <Row key={index} gutter={8} style={{ marginBottom: 8 }}>
-                          <Col span={10}>
-                            <Select
-                              value={payment.method}
-                              onChange={(value) => updateSplitPayment(index, 'method', value)}
-                              style={{ width: '100%' }}
-                            >
+                        </Form.Item>
+                      </Col>
+                      <Col span={12}>
+                        <Form.Item label="Payment Method" name="payment_method">
+                          {!isSplitPayment ? (
+                            <Select onChange={(value) => {
+                              if (value === 'split') {
+                                setIsSplitPayment(true);
+                              }
+                            }}>
                               <Option value="cash">Cash</Option>
                               <Option value="credit_card">Credit Card</Option>
                               <Option value="debit_card">Debit Card</Option>
-                              <Option value="UPI Current Account">UPI Current</Option>
-                              <Option value="UPI Normal Account">UPI Normal</Option>
-                              <Option value="net_banking">Net Banking</Option>
+                              <Option value="UPI Current Account">UPI Current Account</Option>
+                              <Option value="UPI Normal Account">UPI</Option>
+                              <Option value="net_banking">Net Banking(Bank Transfer)</Option>
+                              <Option value="split">Split Payment</Option>
+                              <Option value="hold">Hold</Option>
                             </Select>
-                          </Col>
-                          <Col span={10}>
-                            <InputNumber
-                              value={payment.amount}
-                              onChange={(value) => updateSplitPayment(index, 'amount', value)}
-                              placeholder="Amount"
-                              min={0}
-                              style={{ width: '100%' }}
-                              prefix="₹"
-                            />
-                          </Col>
-                          <Col span={4}>
-                            {splitPayments.length > 1 && (
-                              <Button
-                                danger
-                                size="icon"
-                                onClick={() => removeSplitPayment(index)}
-                                icon={<Trash2 size={16} />}
-                                style={{ border: 'none', background: 'none', boxShadow: "none" }}
-                              >
-                              </Button>
-                            )}
-                          </Col>
-                        </Row>
-                      ))}
-                      <Divider style={{ margin: '12px 0' }} />
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600 }}>
-                        <span>Total Split Amount:</span>
-                        <span style={{ color: getTotalSplitAmount() === summary.grandTotal ? '#52c41a' : '#ff4d4f' }}>
-                          ₹{getTotalSplitAmount().toFixed(2)} / ₹{summary.grandTotal.toFixed(2)}
-                        </span>
-                      </div>
-                      {getTotalSplitAmount() !== summary.grandTotal && (
-                        <Alert
-                          message="Split payment total must equal the bill total"
-                          type="warning"
-                          showIcon
-                          style={{ marginTop: 8 }}
-                        />
-                      )}
-                    </Card>
-                  )}
+                          ) : (
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                              <span style={{ fontWeight: 600 }}>Split Payment Active</span>
+                              <Button size="small" type="link" onClick={() => setIsSplitPayment(false)}>Cancel</Button>
+                            </div>
+                          )}
+                        </Form.Item>
+                      </Col>
+                    </Row>
 
-                  {/* Coupon Section - Always show */}
-                  {/* <Card
+                    <Row gutter={16}>
+                      <Col span={24}>
+                        <Card size="small" style={{ marginBottom: 16, border: isShipping ? '1px solid #1890ff' : '1px solid #f0f0f0' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 0 }}>
+                            <Space>
+                              <Truck size={18} color={isShipping ? '#1890ff' : '#666'} />
+                              <span style={{ fontWeight: 600 }}>Shipping Required?</span>
+                            </Space>
+                            <Form.Item name="is_shipping" valuePropName="checked" noStyle>
+                              <Switch
+                                checked={isShipping}
+                                onChange={(val) => setIsShipping(val)}
+                              />
+                            </Form.Item>
+                          </div>
+                          <AnimatePresence>
+                            {isShipping && (
+                              <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: "auto", opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                transition={{ duration: 0.3, ease: "easeInOut" }}
+                                style={{ overflow: "hidden" }}
+                              >
+                                <div style={{ paddingTop: 12 }}>
+                                  <Form.Item
+                                    label="Shipping Address"
+                                    name="shipping_address"
+                                    rules={[{ required: true, message: 'Please enter shipping address' }]}
+                                  >
+                                    <Input.TextArea
+                                      placeholder="Enter full address with pincode"
+                                      rows={2}
+                                      value={shippingAddress}
+                                      onChange={(e) => setShippingAddress(e.target.value)}
+                                    />
+                                  </Form.Item>
+                                  <Form.Item
+                                    label={
+                                      <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                                        <span className="mr-2">Custom Mobile Number</span>
+                                        <Form.Item name="same_as_billing" valuePropName="checked" noStyle>
+                                          <Checkbox onChange={(e) => {
+                                            if (e.target.checked) {
+                                              form.setFieldsValue({ custom_phone: form.getFieldValue("customer_phone") });
+                                            } else {
+                                              form.setFieldsValue({ custom_phone: "" });
+                                            }
+                                          }}>
+                                            <span style={{ fontSize: '11px', fontWeight: 'normal' }}>Same as Billing Mobile?</span>
+                                          </Checkbox>
+                                        </Form.Item>
+                                      </div>
+                                    }
+                                    name="custom_phone"
+                                  >
+                                    <Input placeholder="Enter custom mobile for shipping/bill" maxLength={10} />
+                                  </Form.Item>
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </Card>
+                      </Col>
+                    </Row>
+
+                    {/* Split Payment Section */}
+                    {isSplitPayment && (
+                      <Card
+                        size="small"
+                        title="Split Payment Details"
+                        style={{ marginBottom: 16, background: '#fff7e6', border: '1px solid #ffd591' }}
+                        extra={
+                          <Button
+                            type="dashed"
+                            size="small"
+                            onClick={addSplitPayment}
+                          >
+                            + Add Payment
+                          </Button>
+                        }
+                      >
+                        {splitPayments.map((payment, index) => (
+                          <Row key={index} gutter={8} style={{ marginBottom: 8 }}>
+                            <Col span={10}>
+                              <Select
+                                value={payment.method}
+                                onChange={(value) => updateSplitPayment(index, 'method', value)}
+                                style={{ width: '100%' }}
+                              >
+                                <Option value="cash">Cash</Option>
+                                <Option value="credit_card">Credit Card</Option>
+                                <Option value="debit_card">Debit Card</Option>
+                                <Option value="UPI Current Account">UPI Current</Option>
+                                <Option value="UPI Normal Account">UPI Normal</Option>
+                                <Option value="net_banking">Net Banking</Option>
+                              </Select>
+                            </Col>
+                            <Col span={10}>
+                              <InputNumber
+                                value={payment.amount}
+                                onChange={(value) => updateSplitPayment(index, 'amount', value)}
+                                placeholder="Amount"
+                                min={0}
+                                style={{ width: '100%' }}
+                                prefix="₹"
+                              />
+                            </Col>
+                            <Col span={4}>
+                              {splitPayments.length > 1 && (
+                                <Button
+                                  danger
+                                  size="icon"
+                                  onClick={() => removeSplitPayment(index)}
+                                  icon={<Trash2 size={16} />}
+                                  style={{ border: 'none', background: 'none', boxShadow: "none" }}
+                                >
+                                </Button>
+                              )}
+                            </Col>
+                          </Row>
+                        ))}
+                        <Divider style={{ margin: '12px 0' }} />
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600 }}>
+                          <span>Total Split Amount:</span>
+                          <span style={{ color: getTotalSplitAmount() === summary.grandTotal ? '#52c41a' : '#ff4d4f' }}>
+                            ₹{getTotalSplitAmount().toFixed(2)} / ₹{summary.grandTotal.toFixed(2)}
+                          </span>
+                        </div>
+                        {getTotalSplitAmount() !== summary.grandTotal && (
+                          <Alert
+                            message="Split payment total must equal the bill total"
+                            type="warning"
+                            showIcon
+                            style={{ marginTop: 8 }}
+                          />
+                        )}
+                      </Card>
+                    )}
+
+                    {/* Coupon Section - Always show */}
+                    {/* <Card
                   size="small"
                   title={
                     <Space>
@@ -1769,53 +1769,72 @@ const [messageApi, contextHolder] = message.useMessage();
                     💡 Tip: Earn coupons by making purchases of ₹2000 or more!
                   </div>
                 </Card> */}
-                  <Row gutter={16}>
-                    <Col span={12}>
-                      <Form.Item label="Select Product">
-                        <Space.Compact style={{ width: '100%' }}>
-                          <Select
-                            showSearch
-                            placeholder="Search and select product"
-                            value={selectedProduct}
-                            onChange={handleProductSelect}
-                            onSearch={(value) => {
-                              if (value.length >= 2) {
-                                fetchAllProducts(value);
-                              } else if (value.length === 0) {
-                                fetchAllProducts();
-                              }
-                            }}
-                            loading={productsLoading}
-                            filterOption={false}
-                            notFoundContent={productsLoading ? <Spin size="small" /> : "No products found"}
-                            style={{ width: "100%" }}
-                          >
-                            {allProducts.map((product) => (
-                              <Option key={product.id} value={product.id}>
-                                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                                  <span>
-                                    {product.product_name} ({product.product_code})
-                                  </span>
-                                  <span style={{ color: "#52c41a", fontWeight: 600 }}>
-                                    ₹{product.selling_price}
-                                  </span>
-                                </div>
-                              </Option>
-                            ))}
-                          </Select>
-                          <Button 
-                            type="primary" 
-                            icon={<PlusOutlined />}
-                            onClick={() => setQuickAddModalVisible(true)}
-                            title="Quick Add New Product"
-                          >
-                            New
-                          </Button>
-                        </Space.Compact>
-                      </Form.Item>
-                    </Col>
+                    <Row gutter={16}>
+                      <Col span={24}>
+                        <Form.Item label={<span>Select Product <kbd style={{ background: "#f3f4f6", padding: "1px 6px", borderRadius: 4, fontSize: 11, marginLeft: 4, border: "1px solid #e5e7eb" }}>Type to search</kbd></span>}>
+                          <Space.Compact style={{ width: '100%' }}>
+                            <Select
+                              showSearch
+                              placeholder="Search by name, code, or barcode…"
+                              value={selectedProduct}
+                              onChange={handleProductSelect}
+                              onSearch={(value) => {
+                                if (value.length >= 2) {
+                                  fetchAllProducts(value);
+                                } else if (value.length === 0) {
+                                  fetchAllProducts();
+                                }
+                              }}
+                              loading={productsLoading}
+                              filterOption={false}
+                              notFoundContent={productsLoading ? <Spin size="small" /> : <div style={{ padding: 12, textAlign: "center", color: "#9ca3af" }}>No products found. Try a different search term.</div>}
+                              style={{ width: "100%", height: "45px" }}
+                              listHeight={320}
+                              className="custom-scrollbar"
+                              dropdownStyle={{ minWidth: 420 }}
+                              optionLabelProp="label"
+                              autoFocus={false}
+                            >
+                              {allProducts.map((product) => (
+                                <Option key={product.id} value={product.id} label={`${product.product_name} (${product.product_code})`}>
+                                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "2px 0" }}>
+                                    <div style={{ display: "flex", flexDirection: "column" }}>
+                                      <span style={{ fontWeight: 600, fontSize: 13 }}>
+                                        {product.product_name}
+                                      </span>
+                                      <span style={{ color: "#9ca3af", fontSize: 11 }}>
+                                        {product.product_code}
+                                        {product.hsn_code ? ` · HSN: ${product.hsn_code}` : ""}
+                                      </span>
+                                    </div>
+                                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
+                                      <span style={{ color: "#16a34a", fontWeight: 700, fontSize: 13 }}>
+                                        ₹{product.selling_price}
+                                      </span>
+                                      {product.stock_quantity !== undefined && (
+                                        <span style={{ fontSize: 10, color: product.stock_quantity <= 0 ? "#ef4444" : "#6b7280" }}>
+                                          Stock: {product.stock_quantity ?? "N/A"}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                </Option>
+                              ))}
+                            </Select>
+                            <Button
+                              type="primary"
+                              icon={<PlusOutlined />}
+                              style={{ height: "45px", boxShadow: "none" }}
+                              onClick={() => setQuickAddModalVisible(true)}
+                              title="Quick Add New Product"
+                            >
+                              New
+                            </Button>
+                          </Space.Compact>
+                        </Form.Item>
+                      </Col>
 
-                    <Col span={12}>
+                      {/* <Col span={12}>
                       <Form.Item label="Apply Coupon">
                         {!couponApplied ? (
                           <>
@@ -1886,106 +1905,106 @@ const [messageApi, contextHolder] = message.useMessage();
                           </div>
                         )}
                       </Form.Item>
-                    </Col>
-                  </Row>
+                    </Col> */}
+                    </Row>
 
 
 
-                  {/* Items table (editable) */}
-                  <Tabs
-                    activeKey={activeTab}
-                    onChange={(key) => {
-                      setActiveTab(key);
-                      if (key === "history") {
-                        fetchCustomerBills();
-                      }
-                    }}
-                    items={[
-                      {
-                        key: "new",
-                        label: "New Bill",
-                        children: (
-                          <Form.List name="items">
-                            {() => {
-                              const items = form.getFieldValue("items") || [];
-                              return (
-                                <>
-                                  <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <div style={{ fontSize: 14, fontWeight: 600, color: '#374151' }}>
-                                      Bill Items ({items.length})
+                    {/* Items table (editable) */}
+                    <Tabs
+                      activeKey={activeTab}
+                      onChange={(key) => {
+                        setActiveTab(key);
+                        if (key === "history") {
+                          fetchCustomerBills();
+                        }
+                      }}
+                      items={[
+                        {
+                          key: "new",
+                          label: "New Bill",
+                          children: (
+                            <Form.List name="items">
+                              {() => {
+                                const items = form.getFieldValue("items") || [];
+                                return (
+                                  <>
+                                    <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                      <div style={{ fontSize: 14, fontWeight: 600, color: '#374151' }}>
+                                        Bill Items ({items.length})
+                                      </div>
+                                      <Button
+                                        type="dashed"
+                                        icon={<PlusOutlined />}
+                                        onClick={handleAddEmptyRow}
+                                        size="small"
+                                      >
+                                        Add New Product
+                                      </Button>
                                     </div>
-                                    <Button
-                                      type="dashed"
-                                      icon={<PlusOutlined />}
-                                      onClick={handleAddEmptyRow}
+                                    <Table
+                                      dataSource={items}
+                                      columns={columns}
+                                      pagination={false}
+                                      rowKey={(r, idx) => r._tempId || idx}
                                       size="small"
-                                    >
-                                      Add New Product
-                                    </Button>
-                                  </div>
-                                  <Table
-                                    dataSource={items}
-                                    columns={columns}
-                                    pagination={false}
-                                    rowKey={(r, idx) => r._tempId || idx}
-                                    size="small"
-                                    scroll={{ x: 600 }}
-                                    className="billingItemsTable"
-                                    style={{ marginBottom: 8 }}
-                                  />
+                                      scroll={{ x: 600 }}
+                                      className="billingItemsTable"
+                                      style={{ marginBottom: 8 }}
+                                    />
 
-                                  <div style={{ display: "flex", justifyContent: "right", marginTop: 10 }}>
-                                    <div>
-                                      <div style={{ display: "flex", justifyContent: "space-between", gap: "4px" }}>
-                                        <div style={{ color: "#374151" }}>Subtotal</div>
-                                        <div style={{ fontWeight: 700, color: "#222" }}>₹{summary.subtotal.toFixed(2)}</div>
+                                    <div style={{ display: "flex", justifyContent: "right", marginTop: 10 }}>
+                                      <div>
+                                        <div style={{ display: "flex", justifyContent: "space-between", gap: "4px" }}>
+                                          <div style={{ color: "#374151" }}>Subtotal</div>
+                                          <div style={{ fontWeight: 700, color: "#222" }}>₹{summary.subtotal.toFixed(2)}</div>
+                                        </div>
                                       </div>
                                     </div>
-                                  </div>
 
-                                  <Divider />
-                                </>
-                              );
-                            }}
-                          </Form.List>
-                        ),
-                      },
-                      ...(customerData
-                        ? [
-                          {
-                            key: "history",
-                            label: "History",
-                            children: (
-                              <Spin spinning={historyLoading}>
-                                <Table
-                                  dataSource={customerHistoryBills}
-                                  columns={historyColumns}
-                                  rowKey={(record) => record.billing_no}
-                                  pagination={{ pageSize: 5 }}
-                                  locale={{ emptyText: "No previous bills found" }}
-                                  size="small"
-                                  expandable={{
-                                    expandedRowRender: renderHistoryExpandedRow,
-                                    rowExpandable: () => true,
-                                  }}
-                                />
-                              </Spin>
-                            ),
-                          },
-                        ]
-                        : []),
-                    ]}
-                  />
-                </div>
-              </Col>
-              <Col xs={24} lg={8}>
-                {/* RIGHT: live preview */}
-                <div style={styles.rightCard}>
-                  <Title level={5} style={{ marginBottom: 6 }}>
-                    Bill Preview
-                  </Title>
+                                    <Divider />
+                                  </>
+                                );
+                              }}
+                            </Form.List>
+                          ),
+                        },
+                        ...(customerData
+                          ? [
+                            {
+                              key: "history",
+                              label: "History",
+                              children: (
+                                <Spin spinning={historyLoading}>
+                                  <Table
+                                    dataSource={customerHistoryBills}
+                                    columns={historyColumns}
+                                    rowKey={(record) => record.billing_no}
+                                    pagination={{ pageSize: 5 }}
+                                    locale={{ emptyText: "No previous bills found" }}
+                                    size="small"
+                                    expandable={{
+                                      expandedRowRender: renderHistoryExpandedRow,
+                                      rowExpandable: () => true,
+                                    }}
+                                  />
+                                </Spin>
+                              ),
+                            },
+                          ]
+                          : []),
+                      ]}
+                    />
+                  </div>
+                </Col>
+                <Col xs={24} lg={8}>
+                  {/* RIGHT: live preview */}
+                  <div style={styles.rightCard}>
+                    <Title level={5} style={{ marginBottom: 6 }}>
+                      Bill Preview
+                    </Title>
 
-                  <style>{`
+                    <style>{`
                   .invoiceHeader{background: gray; padding:12px; border-radius:6px; color:#fff}
                   .invoiceHeader .company{font-weight:800; font-size:16px}
                   .invoiceHeader .meta{font-size:12px; opacity:0.95}
@@ -2001,66 +2020,66 @@ const [messageApi, contextHolder] = message.useMessage();
                   .billingItemsTable .ant-input-number-input{font-size:12px; padding:2px 6px;}
                 `}</style>
 
-                  <div className="invoiceHeader">
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <div>
-                        <div className="company">{currentBranchDetails?.name || currentBranchDetails?.branch_name || "Atelier Tech"}</div>
-                        <div className="meta">{currentBranchDetails?.address || "Address Not Available"}</div>
-                      </div>
-                      <div style={{ textAlign: "right" }}>
-                        <div style={{ fontWeight: 700 }}>{preview.billing_date ? dayjs(preview.billing_date).format("DD MMM YYYY") : "-"}</div>
-                        <div style={{ fontSize: 12 }}>{preview.customer_name || "-"}</div>
-                        <div style={{ fontSize: 12, display: "flex", alignItems: "center", gap: "4px" }}><PhoneCall size={12} /> {preview.customer_phone || preview.customer_phone_nu || "-"}</div>
-                        <div style={{ fontSize: 12, display: "flex", alignItems: "center", gap: "4px" }}> <Laptop size={12} /> {preview.counter_no || preview.couner || "-"}</div>
+                    <div className="invoiceHeader">
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <div>
+                          <div className="company">{currentBranchDetails?.name || currentBranchDetails?.branch_name || "Atelier Tech"}</div>
+                          <div className="meta">{currentBranchDetails?.address || "Address Not Available"}</div>
+                        </div>
+                        <div style={{ textAlign: "right" }}>
+                          <div style={{ fontWeight: 700 }}>{preview.billing_date ? dayjs(preview.billing_date).format("DD MMM YYYY") : "-"}</div>
+                          <div style={{ fontSize: 12 }}>{preview.customer_name || "-"}</div>
+                          <div style={{ fontSize: 12, display: "flex", alignItems: "center", gap: "4px" }}><PhoneCall size={12} /> {preview.customer_phone || preview.customer_phone_nu || "-"}</div>
+                          <div style={{ fontSize: 12, display: "flex", alignItems: "center", gap: "4px" }}> <Laptop size={12} /> {preview.counter_no || preview.couner || "-"}</div>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <div style={{ marginTop: 12 }}>
-                    <Table
-                      className="previewTable"
-                      dataSource={(preview.items || []).map((it, i) => ({ ...it, key: i }))}
-                      columns={previewColumns}
-                      pagination={false}
-                      size="small"
-                      rowClassName={(record, idx) => (idx % 2 === 0 ? "even-row" : "")}
-                      style={{ marginBottom: 8, borderRadius: 6, overflow: "hidden" }}
-                    />
+                    <div style={{ marginTop: 12 }}>
+                      <Table
+                        className="previewTable"
+                        dataSource={(preview.items || []).map((it, i) => ({ ...it, key: i }))}
+                        columns={previewColumns}
+                        pagination={false}
+                        size="small"
+                        rowClassName={(record, idx) => (idx % 2 === 0 ? "even-row" : "")}
+                        style={{ marginBottom: 8, borderRadius: 6, overflow: "hidden" }}
+                      />
 
-                    <div className="previewTotals" style={{ marginTop: 8 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                        <div style={{ color: "#374151" }}>Subtotal</div>
-                        <div>₹{summary.subtotal.toFixed(2)}</div>
-                      </div>
-                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                        <div>Tax</div>
-                        <div>₹{summary.totalTax.toFixed(2)}</div>
-                      </div>
-                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                        <div>Discount</div>
-                        <div>₹{summary.totalDiscount.toFixed(2)}</div>
-                      </div>
-
-                      {couponApplied && summary.couponDiscount > 0 && (
+                      <div className="previewTotals" style={{ marginTop: 8 }}>
                         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                          <div style={{ color: "#52c41a", fontWeight: 600 }}>
-                            <GiftOutlined /> Coupon Discount
-                          </div>
-                          <div style={{ color: "#52c41a", fontWeight: 600 }}>
-                            -₹{summary.couponDiscount.toFixed(2)}
-                          </div>
+                          <div style={{ color: "#374151" }}>Subtotal</div>
+                          <div>₹{summary.subtotal.toFixed(2)}</div>
                         </div>
-                      )}
+                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                          <div>Tax</div>
+                          <div>₹{summary.totalTax.toFixed(2)}</div>
+                        </div>
+                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                          <div>Discount</div>
+                          <div>₹{summary.totalDiscount.toFixed(2)}</div>
+                        </div>
 
-                      <div style={{ display: "flex", justifyContent: "space-between", borderTop: "1px solid #e5e7eb", paddingTop: 10, marginTop: 8 }}>
-                        <div style={{ fontWeight: 800, fontSize: 16 }}>Total Amount</div>
-                        <div style={{ fontWeight: 800, fontSize: 16 }}>₹{summary.grandTotal.toFixed(2)}</div>
-                      </div>
+                        {couponApplied && summary.couponDiscount > 0 && (
+                          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                            <div style={{ color: "#52c41a", fontWeight: 600 }}>
+                              <GiftOutlined /> Coupon Discount
+                            </div>
+                            <div style={{ color: "#52c41a", fontWeight: 600 }}>
+                              -₹{summary.couponDiscount.toFixed(2)}
+                            </div>
+                          </div>
+                        )}
 
-                      <div style={{ marginTop: 12 }}>
-                         <div style={{ marginBottom: 8 }}>
-                            <Checkbox 
-                              checked={isFullPayment} 
+                        <div style={{ display: "flex", justifyContent: "space-between", borderTop: "1px solid #e5e7eb", paddingTop: 10, marginTop: 8 }}>
+                          <div style={{ fontWeight: 800, fontSize: 16 }}>Total Amount</div>
+                          <div style={{ fontWeight: 800, fontSize: 16 }}>₹{summary.grandTotal.toFixed(2)}</div>
+                        </div>
+
+                        <div style={{ marginTop: 12 }}>
+                          <div style={{ marginBottom: 8 }}>
+                            <Checkbox
+                              checked={isFullPayment}
                               onChange={(e) => {
                                 setIsFullPayment(e.target.checked);
                                 if (e.target.checked) {
@@ -2070,243 +2089,243 @@ const [messageApi, contextHolder] = message.useMessage();
                             >
                               <span style={{ fontWeight: 600 }}>Full Payment Received</span>
                             </Checkbox>
-                         </div>
+                          </div>
 
-                         {!isFullPayment && (
-                           <>
-                             <Form.Item label="Received Amount (Advance)" name="paid_amount" style={{ marginBottom: 8 }}>
-                                <InputNumber 
-                                  style={{ width: '100%' }} 
-                                  min={0} 
+                          {!isFullPayment && (
+                            <>
+                              <Form.Item label="Received Amount (Advance)" name="paid_amount" style={{ marginBottom: 8 }}>
+                                <InputNumber
+                                  style={{ width: '100%' }}
+                                  min={0}
                                   placeholder="Amount Received"
                                   prefix="₹"
                                   onChange={() => {
                                     // Force re-render to update Due Amount in preview
-                                    setPreview({...preview, ...form.getFieldsValue()});
+                                    setPreview({ ...preview, ...form.getFieldsValue() });
                                   }}
                                 />
-                             </Form.Item>
-                             <div style={{ display: "flex", justifyContent: "space-between", color: (summary.grandTotal - (form.getFieldValue('paid_amount') || 0)) > 0 ? "#ff4d4f" : "#52c41a", fontWeight: 700 }}>
+                              </Form.Item>
+                              <div style={{ display: "flex", justifyContent: "space-between", color: (summary.grandTotal - (form.getFieldValue('paid_amount') || 0)) > 0 ? "#ff4d4f" : "#52c41a", fontWeight: 700 }}>
                                 <div>Balance Due (Credit)</div>
                                 <div>₹{(summary.grandTotal - (form.getFieldValue('paid_amount') || 0)).toFixed(2)}</div>
-                             </div>
-                           </>
-                         )}
-                      </div>
-
-                      {couponApplied && (
-                        <div style={{ marginTop: 8, padding: 8, background: '#f6ffed', borderRadius: 4, fontSize: 12 }}>
-                          Coupon code <Tag color="success">{couponCode}</Tag> is Applied <Button
-                            danger
-                            type="text"
-                            icon={<Trash2 size={16} />}
-                            onClick={handleRemoveCoupon}
-                            style={{ padding: "0px 8px" }}
-                          />
-                          <div style={{ marginTop: 4, color: '#52c41a', display: 'flex', alignItems: 'center', gap: 4 }}>
-                            <Gift color="red" size={16} /> Discount: ₹{couponData?.discount_amount?.toFixed(2)}
-                          </div>
+                              </div>
+                            </>
+                          )}
                         </div>
-                      )}
 
-                      <div style={{ display: "flex", justifyContent: "right", marginTop: 10, alignItems: "center" }}>
-                        <div style={{ display: "flex", gap: 8 }}>
-                          <Button onClick={handleReset}><ShieldCheck size={16} />Save To Draft</Button>
-                          <Button type="primary" htmlType="submit" style={{ background: "#09b13bff", borderColor: "#09b13bff" }}>
-                            Add Bill
-                          </Button>
-                          {/* <Button type="primary" htmlType="submit" style={{ background: "#0b75ff", borderColor: "#0b75ff" }}>
+                        {couponApplied && (
+                          <div style={{ marginTop: 8, padding: 8, background: '#f6ffed', borderRadius: 4, fontSize: 12 }}>
+                            Coupon code <Tag color="success">{couponCode}</Tag> is Applied <Button
+                              danger
+                              type="text"
+                              icon={<Trash2 size={16} />}
+                              onClick={handleRemoveCoupon}
+                              style={{ padding: "0px 8px" }}
+                            />
+                            <div style={{ marginTop: 4, color: '#52c41a', display: 'flex', alignItems: 'center', gap: 4 }}>
+                              <Gift color="red" size={16} /> Discount: ₹{couponData?.discount_amount?.toFixed(2)}
+                            </div>
+                          </div>
+                        )}
+
+                        <div style={{ display: "flex", justifyContent: "right", marginTop: 10, alignItems: "center" }}>
+                          <div style={{ display: "flex", gap: 8 }}>
+                            <Button onClick={handleReset}><ShieldCheck size={16} />Save To Draft</Button>
+                            <Button type="primary" htmlType="submit" style={{ background: "#09b13bff", borderColor: "#09b13bff" }}>
+                              Add Bill
+                            </Button>
+                            {/* <Button type="primary" htmlType="submit" style={{ background: "#0b75ff", borderColor: "#0b75ff" }}>
                           <Printer size={16} /> Print
                         </Button> */}
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              </Col>
-            </Row>
+                </Col>
+              </Row>
 
-            <div style={{ height: 18 }} />
-          </Form>
-        </Spin>
-      </div >
+              <div style={{ height: 18 }} />
+            </Form>
+          </Spin>
+        </div >
 
-      {/* Success Modal for Generated Coupon */}
-      < Modal
-        open={showCouponModal}
-        onCancel={() => {
-          setShowCouponModal(false);
-          navigate("/billing/list");
-        }
-        }
-        footer={
-          [
-            <Button
-              key="done"
-              type="primary"
-              onClick={() => {
-                setShowCouponModal(false);
-                navigate("/billing/list");
-              }}
-            >
-              Done
-            </Button>,
-          ]}
-        width={500}
-        centered
-      >
-        <div style={{ textAlign: "center", padding: "20px 0" }}>
-          <GiftOutlined style={{ fontSize: 64, color: "#52c41a", marginBottom: 16 }} />
-          <Title level={3} style={{ marginBottom: 8 }}>
-            Congratulations! 🎉
-          </Title>
-          <Title level={5} style={{ color: "#666", fontWeight: "normal", marginBottom: 24 }}>
-            A referral coupon has been generated for this purchase!
-          </Title>
-
-          {generatedCoupon && (
-            <Card
-              style={{
-                background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                border: "none",
-                borderRadius: 12,
-                marginBottom: 16,
-              }}
-            >
-              <div style={{ color: "#fff" }}>
-                <div style={{ fontSize: 12, opacity: 0.9, marginBottom: 8 }}>
-                  COUPON CODE
-                </div>
-                <div
-                  style={{
-                    fontSize: 32,
-                    fontWeight: "bold",
-                    letterSpacing: 4,
-                    marginBottom: 16,
-                    fontFamily: "monospace",
-                  }}
-                >
-                  {generatedCoupon.code}
-                </div>
-                <Divider style={{ borderColor: "rgba(255,255,255,0.3)", margin: "16px 0" }} />
-                <Row gutter={16} style={{ textAlign: "left" }}>
-                  <Col span={12}>
-                    <div style={{ fontSize: 12, opacity: 0.9 }}>Valid From</div>
-                    <div style={{ fontSize: 14, fontWeight: "bold" }}>
-                      {dayjs(generatedCoupon.valid_from).format("DD MMM YYYY")}
-                    </div>
-                  </Col>
-                  <Col span={12}>
-                    <div style={{ fontSize: 12, opacity: 0.9 }}>Valid Until</div>
-                    <div style={{ fontSize: 14, fontWeight: "bold" }}>
-                      {dayjs(generatedCoupon.valid_until).format("DD MMM YYYY")}
-                    </div>
-                  </Col>
-                </Row>
-                <Divider style={{ borderColor: "rgba(255,255,255,0.3)", margin: "16px 0" }} />
-                <div style={{ fontSize: 16, fontWeight: "bold" }}>
-                  {generatedCoupon.discount}
-                </div>
-              </div>
-            </Card>
-          )}
-
-          <Alert
-            message={generatedCoupon?.message || "Share this code with friends!"}
-            type="info"
-            showIcon
-            style={{ textAlign: "left" }}
-          />
-        </div>
-      </Modal >
-
-      {/* Quick Add Product Modal */}
-      <Modal
-        title="Quick Add New Product"
-        open={quickAddModalVisible}
-        onCancel={() => {
-          setQuickAddModalVisible(false);
-          quickAddForm.resetFields();
-        }}
-        footer={null}
-        width={500}
-      >
-        <Form
-          form={quickAddForm}
-          layout="vertical"
-          onFinish={handleQuickAddProduct}
-        >
-          <Form.Item
-            name="product_name"
-            label="Product Name"
-            rules={[{ required: true, message: 'Please enter product name' }]}
-          >
-            <Input 
-              placeholder="e.g., Blue Cotton Dress" 
-              autoFocus
-            />
-          </Form.Item>
-
-          <Form.Item
-            name="unit_price"
-            label="Unit Price (₹)"
-            rules={[
-              { required: true, message: 'Please enter unit price' },
-              { type: 'number', min: 0, message: 'Price must be positive' }
-            ]}
-          >
-            <InputNumber
-              placeholder="e.g., 500"
-              style={{ width: '100%' }}
-              min={0}
-              precision={2}
-            />
-          </Form.Item>
-
-          <Form.Item
-            name="unit"
-            label="Unit"
-            initialValue="piece"
-          >
-            <Select>
-              <Option value="piece">Piece</Option>
-              <Option value="kg">Kilogram (kg)</Option>
-              <Option value="gram">Gram (g)</Option>
-              <Option value="liter">Liter (L)</Option>
-              <Option value="meter">Meter (m)</Option>
-              <Option value="box">Box</Option>
-              <Option value="pack">Pack</Option>
-            </Select>
-          </Form.Item>
-
-          <Alert
-            message="Quick Add"
-            description="This will create a basic product with auto-generated code. You can edit full details later in Products section."
-            type="info"
-            showIcon
-            style={{ marginBottom: 16 }}
-          />
-
-          <Form.Item style={{ marginBottom: 0 }}>
-            <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
-              <Button onClick={() => {
-                setQuickAddModalVisible(false);
-                quickAddForm.resetFields();
-              }}>
-                Cancel
-              </Button>
-              <Button 
-                type="primary" 
-                htmlType="submit"
-                loading={quickAddLoading}
+        {/* Success Modal for Generated Coupon */}
+        < Modal
+          open={showCouponModal}
+          onCancel={() => {
+            setShowCouponModal(false);
+            navigate("/billing/list");
+          }
+          }
+          footer={
+            [
+              <Button
+                key="done"
+                type="primary"
+                onClick={() => {
+                  setShowCouponModal(false);
+                  navigate("/billing/list");
+                }}
               >
-                Add & Use in Bill
-              </Button>
-            </Space>
-          </Form.Item>
-        </Form>
-      </Modal>
-    </div >
+                Done
+              </Button>,
+            ]}
+          width={500}
+          centered
+        >
+          <div style={{ textAlign: "center", padding: "20px 0" }}>
+            <GiftOutlined style={{ fontSize: 64, color: "#52c41a", marginBottom: 16 }} />
+            <Title level={3} style={{ marginBottom: 8 }}>
+              Congratulations! 🎉
+            </Title>
+            <Title level={5} style={{ color: "#666", fontWeight: "normal", marginBottom: 24 }}>
+              A referral coupon has been generated for this purchase!
+            </Title>
+
+            {generatedCoupon && (
+              <Card
+                style={{
+                  background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                  border: "none",
+                  borderRadius: 12,
+                  marginBottom: 16,
+                }}
+              >
+                <div style={{ color: "#fff" }}>
+                  <div style={{ fontSize: 12, opacity: 0.9, marginBottom: 8 }}>
+                    COUPON CODE
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 32,
+                      fontWeight: "bold",
+                      letterSpacing: 4,
+                      marginBottom: 16,
+                      fontFamily: "monospace",
+                    }}
+                  >
+                    {generatedCoupon.code}
+                  </div>
+                  <Divider style={{ borderColor: "rgba(255,255,255,0.3)", margin: "16px 0" }} />
+                  <Row gutter={16} style={{ textAlign: "left" }}>
+                    <Col span={12}>
+                      <div style={{ fontSize: 12, opacity: 0.9 }}>Valid From</div>
+                      <div style={{ fontSize: 14, fontWeight: "bold" }}>
+                        {dayjs(generatedCoupon.valid_from).format("DD MMM YYYY")}
+                      </div>
+                    </Col>
+                    <Col span={12}>
+                      <div style={{ fontSize: 12, opacity: 0.9 }}>Valid Until</div>
+                      <div style={{ fontSize: 14, fontWeight: "bold" }}>
+                        {dayjs(generatedCoupon.valid_until).format("DD MMM YYYY")}
+                      </div>
+                    </Col>
+                  </Row>
+                  <Divider style={{ borderColor: "rgba(255,255,255,0.3)", margin: "16px 0" }} />
+                  <div style={{ fontSize: 16, fontWeight: "bold" }}>
+                    {generatedCoupon.discount}
+                  </div>
+                </div>
+              </Card>
+            )}
+
+            <Alert
+              message={generatedCoupon?.message || "Share this code with friends!"}
+              type="info"
+              showIcon
+              style={{ textAlign: "left" }}
+            />
+          </div>
+        </Modal >
+
+        {/* Quick Add Product Modal */}
+        <Modal
+          title="Quick Add New Product"
+          open={quickAddModalVisible}
+          onCancel={() => {
+            setQuickAddModalVisible(false);
+            quickAddForm.resetFields();
+          }}
+          footer={null}
+          width={500}
+        >
+          <Form
+            form={quickAddForm}
+            layout="vertical"
+            onFinish={handleQuickAddProduct}
+          >
+            <Form.Item
+              name="product_name"
+              label="Product Name"
+              rules={[{ required: true, message: 'Please enter product name' }]}
+            >
+              <Input
+                placeholder="e.g., Blue Cotton Dress"
+                autoFocus
+              />
+            </Form.Item>
+
+            <Form.Item
+              name="unit_price"
+              label="Unit Price (₹)"
+              rules={[
+                { required: true, message: 'Please enter unit price' },
+                { type: 'number', min: 0, message: 'Price must be positive' }
+              ]}
+            >
+              <InputNumber
+                placeholder="e.g., 500"
+                style={{ width: '100%' }}
+                min={0}
+                precision={2}
+              />
+            </Form.Item>
+
+            <Form.Item
+              name="unit"
+              label="Unit"
+              initialValue="piece"
+            >
+              <Select>
+                <Option value="piece">Piece</Option>
+                <Option value="kg">Kilogram (kg)</Option>
+                <Option value="gram">Gram (g)</Option>
+                <Option value="liter">Liter (L)</Option>
+                <Option value="meter">Meter (m)</Option>
+                <Option value="box">Box</Option>
+                <Option value="pack">Pack</Option>
+              </Select>
+            </Form.Item>
+
+            <Alert
+              message="Quick Add"
+              description="This will create a basic product with auto-generated code. You can edit full details later in Products section."
+              type="info"
+              showIcon
+              style={{ marginBottom: 16 }}
+            />
+
+            <Form.Item style={{ marginBottom: 0 }}>
+              <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
+                <Button onClick={() => {
+                  setQuickAddModalVisible(false);
+                  quickAddForm.resetFields();
+                }}>
+                  Cancel
+                </Button>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  loading={quickAddLoading}
+                >
+                  Add & Use in Bill
+                </Button>
+              </Space>
+            </Form.Item>
+          </Form>
+        </Modal>
+      </div >
     </>
   );
 }

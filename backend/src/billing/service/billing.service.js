@@ -11,12 +11,13 @@ import customerService from "./customer.service.js";
 import couponService from "./coupon.service.js";
 import Shipment from "../models/shipment.model.js";
 import BillingPayment from "../models/billing_payment.models.js";
+import emailService from "../../utils/email.js";
 import "../models/associations.js";
 
 const billingService = {
   // ✅ Create Billing with Items
   async createBillingWithItems(data) {
-    return await sequelize.transaction(async (t) => {
+    const result = await sequelize.transaction(async (t) => {
       // 1️⃣ Handle Customer - Find or Create
       let customer = null;
       if (data.customer_phone) {
@@ -225,6 +226,7 @@ const billingService = {
 
       // 🔟 Check if customer qualifies for new coupon (purchase >= 2000)
       let generatedCoupon = null;
+      /* Disabling coupon generation as per user request
       if (data.customer_phone && totalAmount >= 2000) {
         generatedCoupon = await couponService.checkAndGenerateCoupon(
           totalAmount,
@@ -232,6 +234,7 @@ const billingService = {
           billing.id
         );
       }
+      */
 
       // 1️⃣0️⃣.5️⃣ Create Shipment if requested
       if (data.is_shipping) {
@@ -268,6 +271,19 @@ const billingService = {
         } : null
       };
     });
+
+    // 📧 Send Bill Confirmation Email (Non-blocking)
+    if (result) {
+      const customerEmail = data.customer_email || result.customer?.customer_email;
+      if (customerEmail && emailService.isValidEmail(customerEmail)) {
+        console.log(`Attempting to send bill confirmation to: ${customerEmail}`);
+        emailService.sendBillConfirmationEmail(result, customerEmail).catch(err => {
+          console.error("Failed to send bill confirmation email:", err.message);
+        });
+      }
+    }
+
+    return result;
   },
 
   // ✅ Get All Billings with Filters + Pagination

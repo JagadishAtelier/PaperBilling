@@ -4,11 +4,17 @@ import BillingItem from '../models/billingiteam.models.js';
 import Product from '../../product/models/product.model.js';
 import { Op } from 'sequelize';
 import { sequelize } from '../../db/index.js';
+import { isValidEmail } from '../../utils/email.js';
 
 const customerService = {
     // Create or get customer by phone
     async findOrCreateCustomer(customerData, created_by) {
         const { customer_phone, customer_name, customer_email, address, customer_gstin } = customerData;
+
+        // Validate email if provided
+        if (customer_email && !isValidEmail(customer_email)) {
+            throw new Error('Invalid email format. Please provide a valid email address.');
+        }
 
         // Check if customer exists by phone
         let customer = await Customer.findOne({
@@ -58,6 +64,11 @@ const customerService = {
 
     // Create customer
     async createCustomer(data, created_by) {
+        // Validate email if provided
+        if (data.customer_email && !isValidEmail(data.customer_email)) {
+            throw new Error('Invalid email format. Please provide a valid email address.');
+        }
+
         const exists = await Customer.findOne({
             where: { customer_phone: data.customer_phone }
         });

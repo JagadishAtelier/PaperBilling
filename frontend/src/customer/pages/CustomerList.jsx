@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Table, Button, Space, Popconfirm, message, Input, Tag, Grid, List, Card } from "antd";
-import { EditOutlined, DeleteOutlined, PlusOutlined, SearchOutlined, EyeOutlined } from "@ant-design/icons";
+import { EditOutlined, DeleteOutlined, PlusOutlined, SearchOutlined, EyeOutlined, TeamOutlined } from "@ant-design/icons";
 import customerService from "../service/customerService";
 
 const CustomerList = () => {
@@ -112,7 +112,11 @@ const CustomerList = () => {
   return (
     <div className="p-4 sm:p-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <h1 className="text-2xl font-bold m-0">Customers</h1>
+        <h1 className="text-2xl font-bold m-0" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <TeamOutlined style={{ color: "#1d4ed8" }} />
+          Customers
+        </h1>
+        <span style={{ color: "#6b7280", fontSize: 13 }}>Manage customer records, view details and purchase history</span>
         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
           <Input
             placeholder="Search customers..."

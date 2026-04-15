@@ -14,6 +14,9 @@ import BillDetailsModal from "./BillDetailsModal";
 const { Title, Text } = Typography;
 const { Option } = Select;
 import { useNavigate } from "react-router-dom";
+import { PieChart, Pie, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from 'recharts';
+
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658'];
 
 const styles = {
   page: { padding: 6, minHeight: "100vh", width: "100%" },
@@ -21,7 +24,7 @@ const styles = {
 };
 
 const DashboardFull = () => {
-  const [period, setPeriod] = useState("today");
+  const [period, setPeriod] = useState("month");
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
   const { selectedBranch } = useBranch();
@@ -301,8 +304,8 @@ const DashboardFull = () => {
       ) : dashboardData ? (
         <>
           {/* Recent Bills & Top Products */}
-          <Row gutter={[12, 12]} style={{ marginTop: 16 }}>
-            <Col xs={24} lg={12}>
+          <Row gutter={[12, 12]} style={{ marginTop: 16, display: 'flex', alignItems: 'stretch' }}>
+            <Col xs={24} lg={12} style={{ display: 'flex', flexDirection: 'column' }}>
               <Card
                 title={
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -310,7 +313,8 @@ const DashboardFull = () => {
                     <span>Recent Bills</span>
                   </div>
                 }
-                style={styles.roundedCard}
+                style={{ ...styles.roundedCard, flex: 1, display: 'flex', flexDirection: 'column' }}
+                styles={{ body: { flex: 1, overflow: 'auto' } }}
               >
                 <Table
                   dataSource={dashboardData.recentBills}
@@ -327,7 +331,7 @@ const DashboardFull = () => {
               </Card>
             </Col>
 
-            <Col xs={24} lg={12}>
+            <Col xs={24} lg={12} style={{ display: 'flex', flexDirection: 'column' }}>
               <Card
                 title={
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -335,7 +339,8 @@ const DashboardFull = () => {
                     <span>Top Products</span>
                   </div>
                 }
-                style={styles.roundedCard}
+                style={{ ...styles.roundedCard, flex: 1, display: 'flex', flexDirection: 'column' }}
+                styles={{ body: { flex: 1, overflow: 'auto' } }}
               >
                 <Table
                   dataSource={dashboardData.topProducts}
@@ -354,8 +359,8 @@ const DashboardFull = () => {
           </Row>
 
           {/* Low Stock Alert & Payment Methods */}
-          <Row gutter={[12, 12]} style={{ marginTop: 16 }}>
-            <Col xs={24} lg={12}>
+          <Row gutter={[12, 12]} style={{ marginTop: 16, display: 'flex', alignItems: 'stretch' }}>
+            <Col xs={24} lg={12} style={{ display: 'flex', flexDirection: 'column' }}>
               <Card
                 title={
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -364,7 +369,8 @@ const DashboardFull = () => {
                     <Tag color="red">{dashboardData.summary.lowStockCount}</Tag>
                   </div>
                 }
-                style={styles.roundedCard}
+                style={{ ...styles.roundedCard, flex: 1, display: 'flex', flexDirection: 'column' }}
+                styles={{ body: { flex: 1, overflow: 'auto' } }}
               >
                 {dashboardData.lowStockProducts.length > 0 ? (
                   <Table
@@ -385,30 +391,70 @@ const DashboardFull = () => {
               </Card>
             </Col>
 
-            <Col xs={24} lg={12}>
+            <Col xs={24} lg={12} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <Card
                 title={
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8,overflow:"hidden" }}>
                     <Wallet size={18} />
                     <span>Payment Methods</span>
                   </div>
                 }
-                style={styles.roundedCard}
+                style={{ ...styles.roundedCard, flex: 1, display: 'flex', flexDirection: 'column' }}
+                styles={{ body: { flex: 1, overflow: 'auto' } }}
               >
-                {dashboardData.paymentMethods.map((pm, idx) => (
-                  <div key={idx} style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    padding: "8px 0",
-                    borderBottom: idx < dashboardData.paymentMethods.length - 1 ? "1px solid #f0f0f0" : "none"
-                  }}>
-                    <div>
-                      <Tag>{pm.method}</Tag>
-                      <Text type="secondary" style={{ fontSize: 12 }}>{pm.count} bills</Text>
-                    </div>
-                    <Text strong>₹{pm.total_amount}</Text>
-                  </div>
-                ))}
+                {dashboardData.paymentMethods.length > 0 ? (
+                  <Row align="middle" style={{ height: '100%', width: '100%' }}>
+                    <Col xs={24} sm={10} style={{ height: 220,zIndex:1 }}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={dashboardData.paymentMethods.map((pm, index) => ({
+                              name: pm.method?.toUpperCase(),
+                              value: parseFloat(pm.total_amount),
+                              fill: COLORS[index % COLORS.length]
+                            }))}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={50}
+                            outerRadius={75}
+                            paddingAngle={5}
+                            dataKey="value"
+                            stroke="none"
+                          />
+                          <RechartsTooltip 
+                            formatter={(value) => `₹${parseFloat(value).toLocaleString()}`}
+                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </Col>
+                    <Col xs={24} sm={14}>
+                      <div style={{ paddingLeft: 16 }}>
+                        {dashboardData.paymentMethods.map((pm, idx) => (
+                          <div key={idx} style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            padding: "6px 0",
+                            borderBottom: idx < dashboardData.paymentMethods.length - 1 ? "1px solid #f0f0f0" : "none"
+                          }}>
+                            <div style={{ display: "flex", flexDirection: "column" }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                <div style={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: COLORS[idx % COLORS.length] }} />
+                                <Text strong style={{ fontSize: 13 }}>{pm.method?.toUpperCase()}</Text>
+                              </div>
+                              <Text type="secondary" style={{ fontSize: 11, marginLeft: 18 }}>({pm.count} bills)</Text>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center' }}>
+                               <Text strong>₹{parseFloat(pm.total_amount).toLocaleString()}</Text>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </Col>
+                  </Row>
+                ) : (
+                  <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No transactions in this period" />
+                )}
               </Card>
 
               {/* Recent Inwards */}
@@ -419,27 +465,32 @@ const DashboardFull = () => {
                     <span>Recent Inwards</span>
                   </div>
                 }
-                style={{ ...styles.roundedCard, marginTop: 12 }}
+                style={{ ...styles.roundedCard, flex: 1, display: 'flex', flexDirection: 'column' }}
+                styles={{ body: { flex: 1, overflow: 'auto' } }}
               >
-                {dashboardData.recentInwards.slice(0, 5).map((inward, idx) => (
-                  <div key={idx} style={{
-                    padding: "8px 0",
-                    borderBottom: idx < 4 ? "1px solid #f0f0f0" : "none"
-                  }}>
-                    <div style={{ display: "flex", justifyContent: "space-between" }}>
-                      <div>
-                        <Text strong>{inward.inward_no}</Text>
-                        <div><Text type="secondary" style={{ fontSize: 12 }}>{inward.supplier_name}</Text></div>
-                      </div>
-                      <div style={{ textAlign: "right" }}>
-                        <div><Text strong>₹{inward.total_amount}</Text></div>
-                        <Tag color={inward.status === 'completed' ? 'green' : 'orange'} style={{ fontSize: 10 }}>
-                          {inward.status}
-                        </Tag>
+                {dashboardData.recentInwards.length > 0 ? (
+                  dashboardData.recentInwards.slice(0, 5).map((inward, idx) => (
+                    <div key={idx} style={{
+                      padding: "8px 0",
+                      borderBottom: idx < 4 ? "1px solid #f0f0f0" : "none"
+                    }}>
+                      <div style={{ display: "flex", justifyContent: "space-between" }}>
+                        <div>
+                          <Text strong>{inward.inward_no}</Text>
+                          <div><Text type="secondary" style={{ fontSize: 12 }}>{inward.supplier_name}</Text></div>
+                        </div>
+                        <div style={{ textAlign: "right" }}>
+                          <div><Text strong>₹{inward.total_amount}</Text></div>
+                          <Tag color={inward.status === 'completed' ? 'green' : 'orange'} style={{ fontSize: 10 }}>
+                            {inward.status}
+                          </Tag>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No recent inwards" />
+                )}
               </Card>
             </Col>
           </Row>

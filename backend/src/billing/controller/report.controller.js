@@ -8,7 +8,7 @@ const reportController = {
    */
   async getSalesReport(req, res) {
     try {
-      const { period = 'today', startDate, endDate, branch_id } = req.query;
+      const { period = 'today', startDate, endDate, branch_id, customer_name } = req.query;
       
       // Get branch_ids from branchContext (populated by authenticateBranch middleware)
       let branch_ids = [];
@@ -90,7 +90,8 @@ const reportController = {
         period,
         startDate,
         endDate,
-        branch_ids
+        branch_ids,
+        customer_name
       });
 
       return res.status(200).json({

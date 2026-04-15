@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Table, Input, Button, Space, Popconfirm, Tag, message, Select, Alert, Grid, List, Card } from "antd";
-import { PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
+import { PlusOutlined, EditOutlined, DeleteOutlined, InboxOutlined } from "@ant-design/icons";
 import inwardService from "../service/inwardService.js";
 import { useBranch } from "../../context/BranchContext";
 import debounce from "lodash.debounce";
@@ -225,6 +225,14 @@ const InwardList = () => {
 
   return (
     <div className="p-4 sm:p-6">
+      {/* ── Page Heading ── */}
+      <div style={{ marginBottom: 16 }}>
+        <h2 style={{ fontSize: 22, fontWeight: 700, margin: 0, display: "flex", alignItems: "center", gap: 8 }}>
+          <InboxOutlined style={{ color: "#d97706" }} />
+          Inward Management
+        </h2>
+        <span style={{ color: "#6b7280", fontSize: 13 }}>Track incoming stock, supplier orders and inventory receipts</span>
+      </div>
       {showBranchFilter && availableBranches.length > 0 && (
         <Alert
           message="Multiple Branches Access"

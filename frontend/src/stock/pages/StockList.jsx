@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Table, Input, Button, Space, message, Upload, Modal, Alert } from "antd";
-import { UploadOutlined, DownloadOutlined } from "@ant-design/icons";
+import { UploadOutlined, DownloadOutlined, DatabaseOutlined } from "@ant-design/icons";
 import stockService from "../service/stockService.js";
 import { useBranch } from "../../context/BranchContext";
 import * as XLSX from "xlsx";
@@ -145,6 +145,15 @@ const StockList = () => {
 
     return (
         <div className="p-4">
+            {/* ── Page Heading ── */}
+            <div style={{ marginBottom: 16 }}>
+                <h2 style={{ fontSize: 22, fontWeight: 700, margin: 0, display: "flex", alignItems: "center", gap: 8 }}>
+                    <DatabaseOutlined style={{ color: "#0369a1" }} />
+                    Stock Inventory
+                </h2>
+                <span style={{ color: "#6b7280", fontSize: 13 }}>View current stock levels, quantities and pricing</span>
+            </div>
+
             <div className="mb-4">
                 <Alert
                     message={`Viewing stock for: ${selectedBranch.name} (${selectedBranch.code}) | Role: ${userRole}`}

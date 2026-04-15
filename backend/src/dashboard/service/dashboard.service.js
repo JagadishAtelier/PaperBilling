@@ -49,7 +49,7 @@ class DashboardService {
 
     const periodWhere = {
       ...where,
-      createdAt: { [Op.between]: [startDate, endDate] }
+      billing_date: { [Op.between]: [startDate, endDate] }
     };
 
     // Parallel queries for better performance

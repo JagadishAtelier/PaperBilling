@@ -32,6 +32,7 @@ import {
   ReloadOutlined,
   PrinterOutlined,
   DownloadOutlined,
+  FileTextOutlined,
 } from "@ant-design/icons";
 import billingService from "../service/billingService.js";
 import { useBranch } from "../../context/BranchContext";
@@ -367,8 +368,17 @@ function BillingList() {
 
   return (
     <div className="p-4 min-h-screen">
-      {/* Filters + Controls */}
-      {/* Filters + Controls */}
+      {/* ── Page Heading ── */}
+      <div style={{ marginBottom: 20 }}>
+        <h2 style={{ fontSize: 22, fontWeight: 700, margin: 0, display: "flex", alignItems: "center", gap: 8 }}>
+          <FileTextOutlined style={{ color: "#7c3aed" }} />
+          Bills &amp; Invoices
+        </h2>
+        <span style={{ color: "#6b7280", fontSize: 13 }}>
+          Manage all billing records, view status and details
+        </span>
+      </div>
+
       <div className="flex flex-col justify-between items-start gap-4 mb-4">
         {/* Left Side: Tabs */}
         <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto overflow-x-auto">
@@ -384,13 +394,13 @@ function BillingList() {
               { key: "paid", label: "Paid" },
               { key: "partially_paid", label: "Partially Paid" },
               { key: "pending", label: "Pending" },
-              { key: "failed", label: "Failed" },
+              // { key: "failed", label: "Failed" },
               { key: "overdue", label: "Overdue" },
             ]}
             className="w-full sm:w-auto"
           />
 
-          <Tabs
+          {/* <Tabs
             activeKey={typeFilter}
             onChange={(key) => {
               setTypeFilter(key);
@@ -403,7 +413,7 @@ function BillingList() {
               { key: "casier", label: "Casier" },
             ]}
             className="w-full sm:w-auto"
-          />
+          /> */}
         </div>
 
         {/* Right Side: Actions */}
@@ -421,9 +431,9 @@ function BillingList() {
             <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate("/billing/add")} className="flex-1 sm:flex-none">
               Add
             </Button>
-            <Button icon={<FilePdfOutlined />} onClick={exportPDF} className="flex-1 sm:flex-none">
+            {/* <Button icon={<FilePdfOutlined />} onClick={exportPDF} className="flex-1 sm:flex-none">
               PDF
-            </Button>
+            </Button> */}
 
             <div className="hidden md:block">
               <Radio.Group value={viewMode} onChange={(e) => setViewMode(e.target.value)} optionType="button" buttonStyle="solid" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>

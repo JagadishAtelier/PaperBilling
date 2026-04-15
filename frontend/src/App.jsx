@@ -56,7 +56,7 @@ const App = () => {
 
   const menuItems = useMemo(() => {
     const items = modules
-      .filter(({ name }) => name !== "Category" && name !== "subcategory")
+      .filter(({ name }) => name !== "Category" && name !== "subcategory" && name !== "marketing" && name !== "coupon")
       .map(({ name, menuItems }) => {
 
         // Dashboard direct route

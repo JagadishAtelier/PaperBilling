@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Table, Input, Button, Space, Popconfirm, Tag, message, Dropdown, Grid, List, Card } from "antd";
-import { PlusOutlined, EditOutlined, DeleteOutlined, DownloadOutlined, MoreOutlined } from "@ant-design/icons";
+import { PlusOutlined, EditOutlined, DeleteOutlined, DownloadOutlined, MoreOutlined, ShoppingOutlined } from "@ant-design/icons";
 import productService from "../services/productService.js";
 import debounce from "lodash.debounce";
 import { QRCodeCanvas } from "qrcode.react";
@@ -228,6 +228,15 @@ const ProductList = () => {
 
   return (
     <div className="p-4">
+      {/* ── Page Heading ── */}
+      <div style={{ marginBottom: 16 }}>
+        <h2 style={{ fontSize: 22, fontWeight: 700, margin: 0, display: "flex", alignItems: "center", gap: 8 }}>
+          <ShoppingOutlined style={{ color: "#059669" }} />
+          Products
+        </h2>
+        <span style={{ color: "#6b7280", fontSize: 13 }}>Manage product catalogue, pricing and QR codes</span>
+      </div>
+
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
         <Search
           placeholder="Search products..."

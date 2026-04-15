@@ -106,16 +106,16 @@ const Sidebar = ({ collapsed = true, setCollapsed = () => { }, selectedParent, s
       ],
     },
     { key: "/stock/list", label: "Stocks", icon: <Database size={20} /> },
-    {
-      key: "Marketing",
-      label: "Marketing",
-      icon: <Megaphone size={20} />,
-      children: [
-        { key: "/marketing/dashboard", label: "Overview", icon: <LayoutDashboard size={18} /> },
-        { key: "/marketing/campaigns", label: "Campaigns", icon: <List size={18} /> },
-        { key: "/marketing/whatsapp", label: "WhatsApp", icon: <FaWhatsapp size={18} /> },
-      ],
-    },
+    // {
+    //   key: "Marketing",
+    //   label: "Marketing",
+    //   icon: <Megaphone size={20} />,
+    //   children: [
+    //     { key: "/marketing/dashboard", label: "Overview", icon: <LayoutDashboard size={18} /> },
+    //     { key: "/marketing/campaigns", label: "Campaigns", icon: <List size={18} /> },
+    //     { key: "/marketing/whatsapp", label: "WhatsApp", icon: <FaWhatsapp size={18} /> },
+    //   ],
+    // },
   ];
   const menuItems = propMenuItems && propMenuItems.length ? propMenuItems : staticMenuItems;
   // ===================
