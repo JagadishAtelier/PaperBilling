@@ -19,4 +19,8 @@ router.delete('/customers/:id', customerController.deleteCustomer);
 router.get('/customers/:id/history', customerController.getCustomerHistory);
 router.get('/customers/:id/analytics', customerController.getCustomerAnalytics);
 
+// Email Verification
+router.post('/customers/send-otp', customerController.sendVerificationOTP);
+router.post('/customers/verify-otp', customerController.verifyOTP);
+
 export default router;

@@ -4,7 +4,8 @@ import BillingItem from '../models/billingiteam.models.js';
 import Product from '../../product/models/product.model.js';
 import { Op } from 'sequelize';
 import { sequelize } from '../../db/index.js';
-import { isValidEmail } from '../../utils/email.js';
+import { isValidEmail, sendOtpEmail } from '../../utils/email.js';
+import Otp from '../models/otp.model.js';
 
 const customerService = {
     // Create or get customer by phone
@@ -348,6 +349,57 @@ const customerService = {
                 amount: parseFloat(amount.toFixed(2))
             }))
         };
+    },
+
+    // Send OTP for email verification
+    async sendOtp(email) {
+        if (!isValidEmail(email)) {
+            throw new Error('Invalid email format');
+        }
+
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const expires_at = new Date(Date.now() + 10 * 60000); // 10 minutes
+
+        // Delete old OTPs for this email
+        await Otp.destroy({ where: { email } });
+
+        // Save new OTP
+        await Otp.create({
+            email,
+            otp,
+            expires_at
+        });
+
+        // Send Email
+        await sendOtpEmail(email, otp);
+
+        return true;
+    },
+
+    // Verify OTP
+    async verifyOtp(email, otp) {
+        const record = await Otp.findOne({
+            where: { 
+                email, 
+                otp,
+                expires_at: { [Op.gt]: new Date() }
+            }
+        });
+
+        if (!record) {
+            throw new Error('Invalid or expired OTP');
+        }
+
+        await record.update({ is_verified: true });
+        return true;
+    },
+
+    // Check if email is verified
+    async isEmailVerified(email) {
+        const record = await Otp.findOne({
+            where: { email, is_verified: true }
+        });
+        return !!record;
     }
 };
 

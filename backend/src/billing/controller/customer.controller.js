@@ -1,9 +1,21 @@
 import customerService from '../service/customer.service.js';
 
 const customerController = {
-    // Create customer
     async createCustomer(req, res) {
         try {
+            const { customer_email } = req.body;
+            
+            // If email is provided, check if it's verified
+            if (customer_email) {
+                const isVerified = await customerService.isEmailVerified(customer_email);
+                if (!isVerified) {
+                    return res.status(400).json({
+                        success: false,
+                        message: 'Email must be verified before adding customer'
+                    });
+                }
+            }
+
             const customer = await customerService.createCustomer(req.body, req.user.id);
             res.status(201).json({
                 success: true,
@@ -140,6 +152,42 @@ const customerController = {
             });
         } catch (error) {
             res.status(404).json({
+                success: false,
+                message: error.message
+            });
+        }
+    },
+
+    // Send Verification OTP
+    async sendVerificationOTP(req, res) {
+        try {
+            const { email } = req.body;
+            if (!email) throw new Error('Email is required');
+            await customerService.sendOtp(email);
+            res.status(200).json({
+                success: true,
+                message: 'OTP sent successfully to ' + email
+            });
+        } catch (error) {
+            res.status(400).json({
+                success: false,
+                message: error.message
+            });
+        }
+    },
+
+    // Verify OTP
+    async verifyOTP(req, res) {
+        try {
+            const { email, otp } = req.body;
+            if (!email || !otp) throw new Error('Email and OTP are required');
+            await customerService.verifyOtp(email, otp);
+            res.status(200).json({
+                success: true,
+                message: 'Email verified successfully'
+            });
+        } catch (error) {
+            res.status(400).json({
                 success: false,
                 message: error.message
             });

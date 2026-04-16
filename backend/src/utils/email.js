@@ -164,4 +164,41 @@ export const sendBillConfirmationEmail = async (billingData, customerEmail) => {
   });
 };
 
-export default { sendEmail, sendBillConfirmationEmail, isValidEmail };
+/**
+ * Send an OTP email for verification
+ * @param {string} email - Recipient email
+ * @param {string} otp - OTP code
+ */
+export const sendOtpEmail = async (email, otp) => {
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head><meta charset="UTF-8"><title>Email Verification</title></head>
+    <body style="font-family:'Segoe UI',Arial,sans-serif;max-width:600px;margin:0 auto;color:#1a1a2e;background:#f8fafc;padding:24px;">
+      <div style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.07);">
+        <div style="background:linear-gradient(135deg,#7c3aed,#a78bfa);padding:28px 32px;text-align:center;">
+          <h1 style="color:#fff;margin:0;font-size:22px;">Verify Your Email</h1>
+        </div>
+        <div style="padding:32px;text-align:center;">
+          <p style="color:#4b5563;font-size:16px;margin-bottom:24px;">Use the following code to verify your email address. This code will expire in 10 minutes.</p>
+          <div style="background:#f3f4f6;padding:20px;border-radius:12px;display:inline-block;margin-bottom:24px;">
+            <span style="font-size:32px;font-weight:700;letter-spacing:8px;color:#7c3aed;">${otp}</span>
+          </div>
+          <p style="color:#9ca3af;font-size:14px;">If you didn't request this code, you can safely ignore this email.</p>
+        </div>
+        <div style="background:#f9fafb;padding:16px;text-align:center;border-top:1px solid #f0f0f0;">
+          <p style="color:#9ca3af;font-size:12px;margin:0;">&copy; ${new Date().getFullYear()} Your Billing Software. All rights reserved.</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  return sendEmail({
+    to: email,
+    subject: 'Verification Code - Your Billing Software',
+    html,
+  });
+};
+
+export default { sendEmail, sendBillConfirmationEmail, isValidEmail, sendOtpEmail };

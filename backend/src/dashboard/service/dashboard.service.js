@@ -75,6 +75,10 @@ class DashboardService {
       // Low stock alerts
       lowStockProducts,
       
+      // Stock counts
+      countUnder10,
+      countUnder50,
+
       // Payment method breakdown
       paymentMethods,
       
@@ -162,7 +166,25 @@ class DashboardService {
           }
         ],
         order: [['quantity', 'ASC']],
-        limit: 10
+        limit: 20
+      }),
+      
+      // Stock < 10
+      Stock.count({ 
+        where: { 
+          branch_id: { [Op.in]: branch_ids },
+          is_active: true,
+          quantity: { [Op.lt]: 10 }
+        } 
+      }),
+
+      // Stock < 50
+      Stock.count({ 
+        where: { 
+          branch_id: { [Op.in]: branch_ids },
+          is_active: true,
+          quantity: { [Op.lt]: 50 }
+        } 
       }),
       
       // Payment method breakdown
@@ -210,7 +232,9 @@ class DashboardService {
         periodBills,
         periodRevenue: parseFloat(periodRevenue || 0).toFixed(2),
         totalStockQuantity: totalStockQuantity || 0,
-        lowStockCount: lowStockProducts.length
+        lowStockCount: lowStockProducts.length,
+        countUnder10,
+        countUnder50
       },
       recentBills: recentBills.map(bill => ({
         id: bill.id,
