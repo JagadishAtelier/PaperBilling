@@ -1,6 +1,7 @@
 // src/components/dashboard/DashboardFull.jsx
 import React, { useEffect, useState } from "react";
-import { Row, Col, Card, Typography, Skeleton, Select, Tag, Table, Empty } from "antd";
+import { Row, Col, Card, Typography, Skeleton, Select, Tag, Table, Empty, Alert, Button, Popover, List } from "antd";
+import { InfoCircleOutlined, BellOutlined } from "@ant-design/icons";
 import StatCard from "./StatCard";
 import { Tooltip } from "antd";
 import {
@@ -271,6 +272,89 @@ const DashboardFull = () => {
         </Col>
       </Row>
 
+      {/* 🔔 Notifications Section */}
+      {(dashboardData?.summary?.countUnder50 > 0 || dashboardData?.summary?.countUnder10 > 0) && (
+        <div style={{ marginBottom: 16 }}>
+          <Popover
+            placement="bottom"
+            title={<Text strong>Products with Low Stock</Text>}
+            content={
+              <div style={{ width: 320, maxHeight: 400, overflowY: 'auto' }}>
+                <List
+                  size="small"
+                  dataSource={dashboardData.lowStockProducts}
+                  renderItem={(p) => (
+                    <List.Item 
+                      style={{ padding: '8px 4px', cursor: 'pointer' }}
+                      onClick={() => navigate(`/Product/list?search=${p.product_code}`)}
+                      className="hover:bg-gray-50 transition-colors"
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                        <div>
+                          <div style={{ fontSize: 13, fontWeight: 500 }}>{p.product_name}</div>
+                          <div style={{ fontSize: 11, color: '#8c8c8c' }}>{p.product_code}</div>
+                        </div>
+                        <Tag color={p.quantity < 10 ? "red" : "orange"} style={{ borderRadius: 10, minWidth: 35, textAlign: 'center' }}>
+                          {p.quantity}
+                        </Tag>
+                      </div>
+                    </List.Item>
+                  )}
+                />
+                <div style={{ padding: '8px 0 0 0', textAlign: 'center', borderTop: '1px solid #f0f0f0' }}>
+                   <Button type="link" size="small" onClick={() => document.getElementById('low-stock-card')?.scrollIntoView({ behavior: 'smooth' })}>
+                     Manage All Stock
+                   </Button>
+                </div>
+              </div>
+            }
+            trigger="hover"
+          >
+            <Alert
+              message={
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <BellOutlined style={{ color: '#ff4d4f', fontSize: 18 }} />
+                  <div style={{ flex: 1 }}>
+                    <Text strong style={{ color: '#d32f2f' }}>Stock Alert Summary: </Text>
+                    <Text>
+                      {dashboardData.summary.countUnder10 > 0 && (
+                        <span>
+                          <Text strong style={{ color: '#cf1322' }}>{dashboardData.summary.countUnder10}</Text> products are critically low ({'<'} 10)
+                        </span>
+                      )}
+                      {dashboardData.summary.countUnder10 > 0 && dashboardData.summary.countUnder50 > 0 && " and "}
+                      {dashboardData.summary.countUnder50 > 0 && (
+                        <span>
+                          <Text strong style={{ color: '#d46b08' }}>{dashboardData.summary.countUnder50}</Text> products have stock less than 50.
+                        </span>
+                      )}
+                      <Text type="secondary" style={{ marginLeft: 8, fontSize: 12 }}>(Hover to see list)</Text>
+                    </Text>
+                  </div>
+                  <Button 
+                    size="small" 
+                    type="link" 
+                    danger 
+                    onClick={() => document.getElementById('low-stock-card')?.scrollIntoView({ behavior: 'smooth' })}
+                  >
+                    Manage
+                  </Button>
+                </div>
+              }
+              type="error"
+              showIcon={false}
+              style={{ 
+                borderRadius: 12, 
+                border: '1px solid #ffccc7', 
+                background: '#fff2f0',
+                boxShadow: '0 2px 8px rgba(255, 77, 79, 0.1)',
+                cursor: 'pointer'
+              }}
+            />
+          </Popover>
+        </div>
+      )}
+
       {/* Summary Cards */}
       <Row gutter={[12, 12]}>
         {loading ? (
@@ -359,7 +443,7 @@ const DashboardFull = () => {
           </Row>
 
           {/* Low Stock Alert & Payment Methods */}
-          <Row gutter={[12, 12]} style={{ marginTop: 16, display: 'flex', alignItems: 'stretch' }}>
+          <Row gutter={[12, 12]} style={{ marginTop: 16, display: 'flex', alignItems: 'stretch' }} id="low-stock-card">
             <Col xs={24} lg={12} style={{ display: 'flex', flexDirection: 'column' }}>
               <Card
                 title={

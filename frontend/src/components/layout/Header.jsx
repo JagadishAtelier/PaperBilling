@@ -6,23 +6,49 @@ import {
   DownOutlined,
   MenuUnfoldOutlined,
   MenuFoldOutlined,
+  WarningOutlined
 } from "@ant-design/icons";
-import { Dropdown, message, Menu, Popover, Badge, List, Avatar } from "antd";
+import { Dropdown, message, Menu, Popover, Badge, List, Avatar, Empty } from "antd";
 import { useTheme } from "../../context/ThemeContext";
 import { useNavigate } from "react-router-dom";
+import { AlertTriangle } from "lucide-react";
 import companyLogo from "../assets/Company_logo.png";
 import BranchSelector from "../BranchSelector";
+import dashboardService from "../../dashboard/service/dashboardService";
 
 const HeaderBar = ({ collapsed, setCollapsed }) => {
   const { theme, headerBgColor, headerGradient } = useTheme();
   const navigate = useNavigate();
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [notifications, setNotifications] = useState([]);
+  const [notifLoading, setNotifLoading] = useState(false);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener("resize", handleResize);
+    fetchNotifications();
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  const fetchNotifications = async () => {
+    try {
+      setNotifLoading(true);
+      const response = await dashboardService.getDashboardData('today');
+      if (response.data && response.data.lowStockProducts) {
+        setNotifications(response.data.lowStockProducts.map(p => ({
+          type: 'low_stock',
+          id: p.product_id,
+          title: 'Low Stock Alert',
+          message: `Only ${p.quantity} units of ${p.product_name} left!`,
+          product_code: p.product_code
+        })));
+      }
+    } catch (error) {
+      console.error("Failed to fetch notifications:", error);
+    } finally {
+      setNotifLoading(false);
+    }
+  };
 
   const handleMenuClick = ({ key }) => {
     if (key === "logout") {
@@ -59,30 +85,38 @@ const HeaderBar = ({ collapsed, setCollapsed }) => {
   ];
 
   const notificationContent = (
-    <div style={{ minWidth: 280 }}>
-      <List
-        size="small"
-        dataSource={recentBills}
-        renderItem={(item) => (
-          <List.Item
-            style={{ display: "flex", justifyContent: "space-between", padding: 8 }}
-            key={item.id}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <Avatar style={{ backgroundColor: "#f0f2f5", color: "#000" }}>
-                {item.customer.charAt(0)}
-              </Avatar>
-              <div>
-                <div style={{ fontSize: 13 }}>{item.customer}</div>
-                <div style={{ fontSize: 11, color: "#888" }}>Recent bill</div>
-              </div>
-            </div>
-            <div style={{ fontWeight: 700 }}>₹{item.amount.toFixed(2)}</div>
-          </List.Item>
-        )}
-      />
+    <div style={{ minWidth: 300, maxHeight: 400, overflowY: 'auto' }}>
+      <div style={{ padding: '12px 16px', borderBottom: '1px solid #f0f0f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span style={{ fontWeight: 600 }}>Notifications</span>
+        <Badge status={notifications.length > 0 ? "error" : "default"} text={`${notifications.length} Alerts`} />
+      </div>
+      {notifications.length > 0 ? (
+        <List
+          size="small"
+          dataSource={notifications}
+          renderItem={(item) => (
+            <List.Item
+              style={{ padding: '12px 16px', cursor: 'pointer' }}
+              onClick={() => {
+                navigate(`/Product/list?search=${item.product_code}`);
+              }}
+              className="hover:bg-gray-50 transition-colors"
+            >
+              <List.Item.Meta
+                avatar={<Avatar icon={<AlertTriangle style={{ color: '#ff4d4f', width: 14 }} />} style={{ backgroundColor: '#fff1f0' }} />}
+                title={<span style={{ fontSize: 13, fontWeight: 600 }}>{item.title}</span>}
+                description={<span style={{ fontSize: 12 }}>{item.message}</span>}
+              />
+            </List.Item>
+          )}
+        />
+      ) : (
+        <div style={{ padding: '40px 20px', textAlign: 'center' }}>
+           <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No new notifications" />
+        </div>
+      )}
       <div style={{ textAlign: "center", padding: 8, borderTop: "1px solid #f0f0f0" }}>
-        <a onClick={() => message.info("Open all notifications")}>View all</a>
+        <a onClick={() => navigate('/dashboard')}>View all in Dashboard</a>
       </div>
     </div>
   );
@@ -126,13 +160,13 @@ const HeaderBar = ({ collapsed, setCollapsed }) => {
         <BranchSelector />
 
         {/* Notifications */}
-        {/* <Popover
+        <Popover
           content={notificationContent}
           trigger="click"
           placement="bottomRight"
           overlayInnerStyle={{ borderRadius: "12px", padding: 0 }}
         >
-          <Badge count={recentBills.length} offset={[-2, 2]} size="small">
+          <Badge count={notifications.length} offset={[-2, 2]} size="small">
             <div
               className="cursor-pointer p-2 rounded-full transition-all duration-200 hover:scale-105 active:scale-95"
               style={{
@@ -147,7 +181,7 @@ const HeaderBar = ({ collapsed, setCollapsed }) => {
               <BellFilled style={{ fontSize: 20, color: theme === "dark" ? "#D1D5DB" : "#4B5563" }} />
             </div>
           </Badge>
-        </Popover> */}
+        </Popover>
 
         {/* User dropdown */}
         <Dropdown menu={userMenuItems} placement="bottomRight" trigger={["click"]}>

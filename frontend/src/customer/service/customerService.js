@@ -20,6 +20,10 @@ const customerService = {
   // Points
   getCustomerPoints: (phone) => api.get(`/billing/points/customer/${phone}`),
   getPointsHistory: (phone) => api.get(`/billing/points/customer/${phone}/history`),
+
+  // OTP Verification
+  sendOtp: (email) => api.post("/billing/customers/send-otp", { email }),
+  verifyOtp: (email, otp) => api.post("/billing/customers/verify-otp", { email, otp }),
 };
 
 export default customerService;

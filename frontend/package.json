@@ -5,10 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
-    "build": "vite build --mode hrms",
-    "build:hrms": "vite build --mode hrms",
-    "build:ims": "vite build --mode ims",
-    "build:both": "vite build --mode both",
+    "build": "vite build --mode billing",
     "start": "vite preview --host 0.0.0.0 --port $PORT"
   },
   "dependencies": {

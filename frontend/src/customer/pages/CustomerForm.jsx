@@ -9,6 +9,11 @@ const CustomerForm = () => {
   const { id } = useParams();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [verified, setVerified] = useState(false);
+  const [emailValue, setEmailValue] = useState("");
+  const [originalEmail, setOriginalEmail] = useState("");
 const [messageApi, contextHolder] = message.useMessage();
   useEffect(() => {
     if (id) {
@@ -37,10 +42,53 @@ const [messageApi, contextHolder] = message.useMessage();
         notes: customerData.notes,
         gstin: customerData.customer_gstin,
       });
+      if (customerData.customer_email) {
+        setVerified(true);
+        setEmailValue(customerData.customer_email);
+        setOriginalEmail(customerData.customer_email);
+      }
     } catch (error) {
       message.error("Failed to fetch customer");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSendOtp = async () => {
+    const email = form.getFieldValue("email");
+    if (!email) {
+      return message.error("Please enter email first");
+    }
+    
+    setOtpLoading(true);
+    try {
+      await customerService.sendOtp(email);
+      message.success("OTP sent to " + email);
+      setOtpSent(true);
+    } catch (error) {
+      message.error(error.response?.data?.message || "Failed to send OTP");
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    const email = form.getFieldValue("email");
+    const otp = form.getFieldValue("otp");
+    if (!otp) {
+      return message.error("Please enter OTP");
+    }
+
+    setOtpLoading(true);
+    try {
+      await customerService.verifyOtp(email, otp);
+      message.success("Email verified successfully");
+      setVerified(true);
+      setOtpSent(false);
+    } catch (error) {
+      message.error(error.response?.data?.message || "Invalid OTP");
+    } finally {
+      setOtpLoading(false);
     }
   };
 
@@ -120,7 +168,7 @@ const [messageApi, contextHolder] = message.useMessage();
           </Form.Item>
 
           <Form.Item
-            label="Email"
+            label="Email (Optional)"
             name="email"
             rules={[
               { type: "email", message: "Please enter a valid email address" },
@@ -130,8 +178,54 @@ const [messageApi, contextHolder] = message.useMessage();
               },
             ]}
           >
-            <Input placeholder="customer@example.com" type="email" />
+            <Input 
+              placeholder="customer@example.com" 
+              type="email" 
+              onChange={(e) => {
+                const val = e.target.value;
+                setEmailValue(val);
+                if (val === originalEmail && originalEmail !== "") {
+                    setVerified(true);
+                } else if (val !== emailValue) {
+                    setVerified(false);
+                    setOtpSent(false);
+                }
+              }}
+              suffix={verified ? <span style={{ color: '#52c41a', fontWeight: 'bold' }}>Verified</span> : null}
+              disabled={verified && !id}
+            />
           </Form.Item>
+
+          {emailValue && !verified && !otpSent && (
+            <Button 
+                type="dashed" 
+                onClick={handleSendOtp} 
+                loading={otpLoading}
+                style={{ marginBottom: 16 }}
+            >
+                Send Verification OTP
+            </Button>
+          )}
+
+          {otpSent && !verified && (
+            <div style={{ marginBottom: 16, background: '#f9fafb', padding: 16, borderRadius: 8, border: '1px solid #e5e7eb' }}>
+                <Form.Item
+                    label="Enter OTP"
+                    name="otp"
+                    extra="Check your email for the 6-digit code"
+                >
+                    <Input placeholder="6-digit OTP" maxLength={6} style={{ width: 200 }} />
+                </Form.Item>
+                <Space>
+                    <Button type="primary" onClick={handleVerifyOtp} loading={otpLoading}>
+                        Verify OTP
+                    </Button>
+                    <Button onClick={handleSendOtp} loading={otpLoading}>
+                        Resend
+                    </Button>
+                </Space>
+            </div>
+          )}
 
           <Form.Item label="Address" name="address">
             <Input.TextArea rows={3} placeholder="Customer address" />
@@ -152,7 +246,12 @@ const [messageApi, contextHolder] = message.useMessage();
 
           <Form.Item>
             <Space>
-              <Button type="primary" htmlType="submit" loading={loading}>
+              <Button 
+                type="primary" 
+                htmlType="submit" 
+                loading={loading}
+                disabled={emailValue && !verified}
+              >
                 {id ? "Update" : "Create"}
               </Button>
               <Button onClick={() => navigate("/customer/list")}>Cancel</Button>
